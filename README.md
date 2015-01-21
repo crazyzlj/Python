@@ -1,4 +1,3 @@
-Tips:
 Author: Liangjun Zhu
 Email: crazyzlj@gmail.com
 
@@ -16,4 +15,5 @@ This script can calculate values included "MEAN","MAJORITY",
 shapefile's attribute table and named by the corresponding
 raster's name.
 
-2. 
+2. AddNearAtrributesDirections
+   
