@@ -16,4 +16,10 @@ shapefile's attribute table and named by the corresponding
 raster's name.
 
 2. AddNearAtrributesDirections
+   This script is used to identify the surrounding polygon and add an attribute to save the relative direction, respectively.
+   For detail of instrument and usage, please go to http://bbs.esrichina-bj.cn/ESRI/viewthread.php?tid=126293&extra=&page=1 , 
+   http://bbs.esrichina-bj.cn/ESRI/viewthread.php?tid=60835&extra=&page=1  and http://bbs.esrichina-bj.cn/ESRI/viewthread.php?tid=85765.
    
+3. CSV2PtsShp
+   This is a very simple but useful script. To convert .CSV points coordinates to ESRI shapefile.
+4. 
