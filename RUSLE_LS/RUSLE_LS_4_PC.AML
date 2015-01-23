@@ -1,0 +1,670 @@
+/*
+/**************************************************************************
+/*
+/*RUSLE_LS_4_PC.AML
+/*
+/*Calculates LS Factor using DEM data according to RUSLE-based criteria.
+/*
+/*Code prepared by: Rick D. Van Remortel, Lockheed Martin Environmental 
+/*Services, Las Vegas, NV, latest draft dated Dec 2003.  Other primary 
+/*contibutors are: Robert J. Hickey, Central Washington University, 
+/*Ellensburg, WA;  Mathew E. Hamilton and Robert W. Maichle, Lockheed 
+/*Martin Environmental Services, Las Vegas, NV.
+/*
+/*RUSLE Version 4
+/*Corrects computational order of operations for S-constituent elements from 
+/*previous versions, which results in a more accurate LS factor estimate for RUSLE.
+/*
+/*RUSLE Version 3 (May 2002; revised Aug 2003 to correct rounding problem in final 
+/*LS grid) increased speed by inverting order of slope-length re-initialization code; 
+/*adjusted slope angle code to get more consistent results on assignment of minimum 
+/*slope gradients; adjusted cell length code to make more generic and solve ESRI's 
+/*ArcInfo 7 error with "in" function and resultant portability to ArcInfo 8 on PC.  
+/*
+/*RUSLE Version 2 added more caveats about watershed catchment configuration of 
+/*input DEM, and modified number of nodata check grids that were produced in the
+/*initial RUSLE Version 1.
+/*
+/*Original USLE-based AML code written by Robert Hickey, USLE Version 1 documented by 
+/*Hickey et al. (1994) and USLE Version 2 by Hickey (2000). The USLE Version 2 code 
+/*was modified by Rick Van Remortel and Matt Hamilton, Lockheed Martin Environmental 
+/*Services, Las Vegas, NV, with a RUSLE focus, to change a few of the assumptions
+/*about filled sinks and flat areas, and to address the handling of any residual
+/*nodata strips near the watershed boundary, allow assignment of separate slope 
+/*cutoff factors for different slope ranges, and utilize LS-calculation algorithms 
+/*in accordance with numerous RUSLE improvements documented in McCool et al. (1997) 
+/*as Chapter 4 within the RUSLE Handbook (Renard et al. (1997). A journal article 
+/*describing the RUSLE-based AML has been published with the following citation: 
+/*Van Remortel, R.D., M.E. Hamilton, and R.J. Hickey.  2001.  Estimating 
+/*the LS factor for RUSLE through iterative slope length processing of digital 
+/*elevation data within ArcInfo Grid.  Cartography Vol. 30, No. 1, Pg. 27-35. 
+/*
+/*Tested on: ArcInfo Workstation 8.2 on WinXP
+/*
+/*Notes for the user:
+/*
+/*Steeper, longer slopes produce higher overland flow velocities, but soil loss 
+/*is much more sensitive to changes in S than to changes in L.  The RUSLE effects 
+/*of irregular and segmented slope shapes are not addressed within the AML.
+/*
+/*LS calculation algorithms are based on the RUSLE research of McCool et al. (1997)
+/*which corrects slope length for horizontal projection; useful in GIS where slope 
+/*lengths are measured off grid cells or maps (x,y) instead of in the field (x,y,z).
+/*
+/*The AML calculates slope length from high points (e.g., ridgetops) towards low points
+/*such as the watershed pour point or other outlet.  An administratively-defined 
+/*watershed (e.g., HUC) may not be suitable unless it's also a hydrologically defined 
+/*catchment area.  The ideal input for generating an LS-factor grid is a DEM dataset 
+/*(e.g., NED) of suitable extent that has been either clipped or enlarged to encompass 
+/*the zone of interest plus any additional relevant catchment area. To avoid any 
+/*scale-induced edge effects, the mapextent should be slightly larger than the area of 
+/*interest.  Make sure DEM elevation units are the same as horizontal distance units 
+/*(the default is meters).
+/*
+/*The output from the L and S calculations should be closely examined to ensure 
+/*that the calculations are being applied properly and that there are no significant 
+/*format problems with the input DEM data.  If processing difficulties occur with the 
+/*use of a floating-point format, truncating or rounding to an integer format may be 
+/*advisable as many DEM product suppliers will not attest to the significance of 
+/*decimal digits in their data sets.  The presence of horizontal or vertical stippling, 
+/*corn-rowing, or edge-matching anomalies in the DEM can yield erratic or discontinuous 
+/*slope length features.  There are smoothing algorithms available that may correct 
+/*some of the DEM irregularities but will also result in unwanted smoothing 
+/*or generalization of other DEM elevation cells that did not require any such 
+/*correction.  If utilized, DEM-enhancement algorithms should be well-documented and 
+/*applied with caution to avoid gross over-extension of slope lengths.
+/*
+/*Define slope angle (theta) in degrees (inverse tangent of %slope gradient).  The 
+/*slope cutoff factor (a value between 0 and 1) is the relative change in slope 
+/*angle that will cause the slope length cumulation to end and start over with the 
+/*next downslope cell; a high factor value will cause the slope length cumulation 
+/*to end more easily than a small factor value, i.e., a smaller slope differential 
+/*between cells is required to end cumulation when using a factor of 0.7 versus 
+/*using a factor of 0.5 (the opposite of what one would initially think).  This 
+/*is a very important consideration for the initial settings, so use care.
+/*
+/*The routine periodically uses 1-cell buffer grid to avoid nodata around edges;
+/*this will often be sufficient to prevent edge errors for many accurately clipped 
+/*input DEMs; however, adding a buffer of about 10 cells to the input watershed DEM 
+/*is recommended to ensure that possible "trapped pools" or strips of nodata 
+/*cells near the outer border of the watershed can later be clipped out of the 
+/*LS-factor grid using the actual watershed boundary. 
+/*
+/**************************************************************************
+
+
+
+&echo &off
+
+/*define a root prefix name (4 characters or less) for study area.
+&type
+&sv sa = [response 'Enter a study area root prefix name, 4 characters or less']
+
+/*identify the workspace containing DEM and study area boundary grids.
+&type
+&sv ws = [response 'Enter full path to workspace holding DEM and boundary grids']
+&if [exists %ws% -workspace] &then
+  &goto skipto11
+&if ^ [exists %ws% -workspace] &then
+  &do
+    &type 
+    &type NOTE: Wrong path identified!
+    &sv ws = [response 'Re-enter full path to workspace holding DEM and boundary grids']
+  &end
+&label skipto11
+
+/*specify input dem elevation grid name.
+&type
+&sv dem_input = [response 'Enter name of the input DEM grid']
+
+/*specify watershed boundary grid for clipping final LS grid.
+&type
+&sv wshed = [response 'Enter name of study area boundary grid']
+
+/*identify DEM units, ensure vertical & horizontal are same.
+&type
+&sv demunits = [response 'Enter DEM measurement units, meters or feet ']
+&if [null %demunits%] &then
+  &sv demunits = meters
+&if %demunits% eq meters or %demunits% eq feet &then
+  &goto skipto12
+&if %demunits% ne meters or %demunits% ne feet &then
+  &do
+    &type 
+    &type NOTE: Wrong DEM vertical/horizontal units!
+    &sv demunits = [response 'Re-enter DEM measurement units, meters or feet ']
+    &if [null %demunits%] &then
+      &sv demunits = meters
+  &end
+&label skipto12
+
+/*set slope cutoff factors for ending/beginning slope length cumulation; use
+/*different factors for lt or ge 5 percent slope gradients.
+&type
+&sv scf_lt5 = [response 'Enter slope cutoff factor for slopes < 5% : suggested = .7']
+&if [null %scf_lt5%] &then
+  &sv scf_lt5 = .7
+&if %scf_lt5% lt 1.1 &then
+  &goto skipto13
+&if %scf_lt5% ge 1.1 &then
+  &do
+    &type 
+    &type NOTE: Erroneous factor value!
+    &sv scf_lt5 = [response 'Re-enter slope cutoff factor for slopes < 5% : suggested = .7']
+    &if [null %scf_lt5%] &then
+      &sv scf_lt5 = .7
+  &end
+&label skipto13
+&type
+&sv scf_ge5 = [response 'Enter slope cutoff factor for slopes >= 5% : suggested = .5']
+&if [null %scf_ge5%] &then
+  &sv scf_ge5 = .5
+&if %scf_ge5% lt 1.1 &then
+  &goto skipto14
+&if %scf_ge5% ge 1.1 &then
+  &do
+    &type 
+    &type NOTE: Erroneous factor value!
+    &sv scf_ge5 = [response 'Re-enter slope cutoff factor for slopes >= 5% : suggested = .5']
+    &if [null %scf_ge5%] &then
+      &sv scf_ge5 = .5
+  &end
+&label skipto14
+
+w %ws%
+&if ^ [exists ls_rusle -workspace] &then
+  cw ls_rusle
+w ls_rusle
+
+&wat runspecs.log
+&type %sa%
+&type %ws%
+&type %dem_input%
+&type %wshed%
+&type %demunits%
+&type %scf_lt5%
+&type %scf_ge5%
+&wat &off
+
+grid
+setwindow ..\%dem_input%
+setcell ..\%dem_input%
+
+/*create filled dem grid using Hickey's alternative to the Grid fill command; this
+/*one uses a sliding 1-cell donut annulus applied to an individual sink cell 
+/*to adopt the minimum value of its octagonal neighbors, thus filling the sink.
+&if [exists dem_fill -grid] &then
+  kill dem_fill all
+&if [exists dem_fill2 -grid] &then
+  kill dem_fill2 all
+dem_fill = ..\%dem_input%
+finished = scalar(0)
+&do &until [show scalar finished] eq 1
+  finished = scalar(1)
+  rename dem_fill dem_fill2
+  if (focalflow(dem_fill2) eq 255) {
+    dem_fill = focalmin (dem_fill2, annulus, 1, 1)
+    test_grid = 0
+    }
+  else {
+    dem_fill = dem_fill2
+    test_grid = 1
+    }
+  endif
+  kill dem_fill2 all
+  /*test for no more sinks filled 
+  docell
+    finished {= test_grid
+  end
+  kill test_grid all
+&end
+
+/*create inflow and outflow direction grids which assign possible inflow or 
+/*outflow direction values within a cell's immediate octagonal neighborhood; 
+/*these grids may legitimately include a few cells with values corresponding to 
+/*other than the primary orthogonal or diagonal directions.
+&if [exists flowdir_in -grid] &then
+  kill flowdir_in all
+flowdir_in = focalflow (dem_fill)
+/*create outflow direction grid 
+&if [exists flowdir_out -grid] &then
+  kill flowdir_out all
+flowdir_out = flowdirection (dem_fill)
+
+&describe dem_fill
+/*reset window to include a 1-cell buffer around input DEM boundary.
+setwindow [calc [show scalar $$wx0] - [show scalar $$cellsize]] ~
+    [calc [show scalar $$wy0] - [show scalar $$cellsize]] ~
+    [calc [show scalar $$wx1] + [show scalar $$cellsize]] ~
+    [calc [show scalar $$wy1] + [show scalar $$cellsize]]
+/*create 1-cell buffer dem to change nodata (nd) on edge cells to a value
+&if [exists dem_fill_b -grid] &then
+  kill dem_fill_b all
+dem_fill_b = con (isnull(dem_fill), focalmin(dem_fill), dem_fill)
+kill dem_fill all
+
+/*set cell length for orthogonal and diagonal flow directions.
+&sv cell = [show scalar $$cellsize]
+&sv cellorth = (1.00 * %cell%)
+&sv celldiag = (1.4142 * %cellorth%)
+
+/*calculate downslope angle in degrees for each cell; amended previous code to reset 
+/*groups of "flat" cells (0.0-degree slope by default, where flowdir_out ^= octagonal 
+/*direction) to a value >0.00 and <0.57 (inv. tan of 1% gradient); suggested value 
+/*is 0.1; new assumption is that all cells, even essentially flat areas such as dry 
+/*lakes, have slope > 0.00 degrees; this ensures that all cells remain connected to 
+/*the flow network, and therefore are assigned a slope angle and final LS factor 
+/*value, however small it might be; the () below prevents problems that occur with 
+/*using whole numbers.
+&if [exists down_slp_ang -grid] &then
+  kill down_slp_ang all
+if (flowdir_out eq 64)
+  down_slp_ang = deg * atan((dem_fill_b - dem_fill_b(0, -1)) div %cellorth%)
+else if (flowdir_out eq 128)
+  down_slp_ang = deg * atan((dem_fill_b - dem_fill_b(1, -1)) div %celldiag%)
+else if (flowdir_out eq 1)
+  down_slp_ang = deg * atan((dem_fill_b - dem_fill_b(1, 0)) div %cellorth%)
+else if (flowdir_out eq 2)
+  down_slp_ang = deg * atan((dem_fill_b - dem_fill_b(1, 1)) div %celldiag%)
+else if (flowdir_out eq 4)
+  down_slp_ang = deg * atan((dem_fill_b - dem_fill_b(0, 1)) div %cellorth%)
+else if (flowdir_out eq 8)
+  down_slp_ang = deg * atan((dem_fill_b - dem_fill_b(-1, 1)) div %celldiag%)
+else if (flowdir_out eq 16)
+  down_slp_ang = deg * atan((dem_fill_b - dem_fill_b(-1, 0)) div %cellorth%)
+else if (flowdir_out eq 32)
+  down_slp_ang = deg * atan((dem_fill_b - dem_fill_b(-1, -1)) div %celldiag%)
+else
+  down_slp_ang = 0.1
+endif
+&if [exists down_slp_ang2 -grid] &then
+  kill down_slp_ang2 all
+down_slp_ang2 = con (down_slp_ang eq 0, 0.1, down_slp_ang)
+kill down_slp_ang all
+rename down_slp_ang2 down_slp_ang
+
+/*reset window to normal extent and clip downslope grid, rename as original name.
+setwindow ..\%dem_input%
+&if [exists down_slp_ang2 -grid] &then
+  kill down_slp_ang2 all
+down_slp_ang2 = down_slp_ang
+kill down_slp_ang
+rename down_slp_ang2 down_slp_ang
+
+/*calculate cell slope length considering orthogonal & diagonal outflow dir.
+&if [exists slp_lgth_cell -grid] &then
+  kill slp_lgth_cell all
+if (flowdir_out eq 2)
+  slp_lgth_cell = %celldiag%
+else if (flowdir_out eq 8)
+  slp_lgth_cell = %celldiag%
+else if (flowdir_out eq 32)
+  slp_lgth_cell = %celldiag%
+else if (flowdir_out eq 128)
+  slp_lgth_cell = %celldiag%
+else
+  slp_lgth_cell = %cellorth%
+endif
+
+/*reset window to buffer extent, create outflow dir grid w/ buffer cells eq 0.
+setwindow dem_fill_b
+&if [exists flowdir_out_b -grid] &then
+  kill flowdir_out_b all
+flowdir_out_b = con (isnull(flowdir_out), 0, flowdir_out)
+kill flowdir_out all
+
+/*create initial cumulative slope length grid and do bitwise compare of flowdir_in 
+/*with flowdir_out to find normally flowing cells, set these to nodata, then 
+/*calculate high points (includes filled sinks) to 1/2 cell length.
+&if [exists slp_lgth_cum -grid] &then
+  kill slp_lgth_cum all
+if ((flowdir_in && 64) and (flowdir_out_b(0, -1) eq 4))
+ slp_lgth_cum = setnull(1 eq 1)
+else if ((flowdir_in && 128) and (flowdir_out_b(1, -1) eq 8))
+ slp_lgth_cum = setnull(1 eq 1)
+else if ((flowdir_in && 1) and (flowdir_out_b(1, 0) eq 16))
+ slp_lgth_cum = setnull(1 eq 1)
+else if ((flowdir_in && 2) and (flowdir_out_b(1, 1) eq 32))
+ slp_lgth_cum = setnull(1 eq 1)
+else if ((flowdir_in && 4) and (flowdir_out_b(0, 1) eq 64))
+ slp_lgth_cum = setnull(1 eq 1)
+else if ((flowdir_in && 8) and (flowdir_out_b(-1, 1) eq 128))
+ slp_lgth_cum = setnull(1 eq 1)
+else if ((flowdir_in && 16) and (flowdir_out_b(-1, 0) eq 1))
+ slp_lgth_cum = setnull(1 eq 1)
+else if ((flowdir_in && 32) and (flowdir_out_b(-1, -1) eq 2))
+ slp_lgth_cum = setnull(1 eq 1)
+else
+ slp_lgth_cum = 0.5 * slp_lgth_cell
+endif
+
+/*set beginning slope length points (high points and filled sinks) to be added back 
+/*in later after slope lengths for all other cells have been determined for each 
+/*iteration; beginning points will have a value of 1/2 their cell slope length; 
+/*a beginning point is a cell that has no points flowing into it or if the only 
+/*cells flowing into it are of equal elevation; amended previous code to change 
+/*assumption that "flat" high points get a value of zero cell slope length to 
+/*1/2-cell slope length; the new assumption is that the minimum cumulative 
+/*slope length is 1/2 cell slope length even for filled sinks and "flat" high 
+/*points, thereby ensuring the LS factor value for every cell > 0.00.
+&if [exists slp_lgth_beg -grid] &then
+  kill slp_lgth_beg all
+slp_lgth_beg = con (isnull(slp_lgth_cum), %cell%, slp_lgth_cum)
+
+/*assign slope-end factor where slope length cumulation is ended; amended previous 
+/*code to use RUSLE guidelines suggesting that a slope break of 5% (2.8624 deg angle) 
+/*separates two different erosion/deposition regimes for gentle and steep slopes; 
+/*this is also a convenient break to address concentration dependency issues, where 
+/*the effects of relative changes in slope are inordinately amplified at lower gradients;
+/*for slope gradients of < 5%, use a higher factor than for >= 5%; this makes it easier 
+/*on shallower slopes to end erosion and begin deposition; i.e., a higher cutoff factor
+/*means that less slope reduction is needed to end cumulation.
+&if [exists slp_end_fac -grid] &then
+  kill slp_end_fac all
+if (down_slp_ang lt 2.8624)
+  slp_end_fac = %scf_lt5%
+else if (down_slp_ang ge 2.8624)
+  slp_end_fac = %scf_ge5%
+endif
+
+/*remove any residual directional grids if present from a previous run.
+&if [exists fromcell_n -grid] &then
+  kill fromcell_n all
+&if [exists fromcell_ne -grid] &then
+  kill fromcell_ne all
+&if [exists fromcell_e -grid] &then
+  kill fromcell_e all
+&if [exists fromcell_se -grid] &then
+  kill fromcell_se all
+&if [exists fromcell_s -grid] &then
+  kill fromcell_s all
+&if [exists fromcell_sw -grid] &then
+  kill fromcell_sw all
+&if [exists fromcell_w -grid] &then
+  kill fromcell_w all
+&if [exists fromcell_nw -grid] &then
+  kill fromcell_nw all
+
+/*amended previous code to set up additional nodata tests that create a series of
+/*nodata grids to track progress of run; reset window to normal extent, use filled 
+/*dem grid to mask testing of buffer cells.
+setwindow ..\%dem_input%
+setmask ..\%dem_input%
+ndcell = scalar(1)
+/*amended previous code to set iterative nodata cell count grids to zero.
+&if [exists slp_lgth_nd2 -grid] &then
+  kill slp_lgth_nd2 all
+slp_lgth_nd2 = 0
+&sv warn = .FALSE.
+
+/*begin iterative loop to calculate cumulative slope length for every cell.
+&sv finished = .FALSE.
+&sv n = 1
+&do &until %finished%
+
+  /*keep copy of previous iterations's max cumulation grid to check progress.
+  &if [exists slp_lgth_prev -grid] &then
+    kill slp_lgth_prev all
+  copy slp_lgth_cum slp_lgth_prev
+
+  &sv counter = 0
+  &do counter = 1 &to 8
+    /*set variables for the if that follows.
+    &select %counter%
+      &when 1
+      &do
+        &sv fromcell_dir = fromcell_n
+        &sv dirfrom = 4
+        &sv dirpossto = 64
+        &sv cellcol = 0
+        &sv cellrow = -1
+      &end
+      &when 2
+      &do
+        &sv fromcell_dir = fromcell_ne
+        &sv dirfrom = 8
+        &sv dirpossto = 128
+        &sv cellcol = 1
+        &sv cellrow = -1
+      &end
+      &when 3
+      &do
+        &sv fromcell_dir = fromcell_e
+        &sv dirfrom = 16
+        &sv dirpossto = 1
+        &sv cellcol = 1
+        &sv cellrow = 0
+      &end
+      &when 4
+      &do
+        &sv fromcell_dir = fromcell_se
+        &sv dirfrom = 32
+        &sv dirpossto = 2
+        &sv cellcol = 1
+        &sv cellrow = 1
+      &end
+      &when 5
+      &do  
+        &sv fromcell_dir = fromcell_s
+        &sv dirfrom = 64
+        &sv dirpossto = 4
+        &sv cellcol = 0
+        &sv cellrow = 1
+      &end
+      &when 6
+      &do
+        &sv fromcell_dir = fromcell_sw
+        &sv dirfrom = 128
+        &sv dirpossto = 8
+        &sv cellcol = -1
+        &sv cellrow = 1
+      &end
+      &when 7
+      &do
+        &sv fromcell_dir = fromcell_w
+        &sv dirfrom = 1
+        &sv dirpossto = 16
+        &sv cellcol = -1
+        &sv cellrow = 0
+      &end
+      &when 8
+      &do
+        &sv fromcell_dir = fromcell_nw
+        &sv dirfrom = 2
+        &sv dirpossto = 32
+        &sv cellcol = -1
+        &sv cellrow = -1
+      &end
+    &end
+
+    /*test flow source cell for nodata using n-notation, control downslope cell
+    /*advance. First test inflow and outflow direction grids for possible flow 
+    /*source cell.
+    if (not(flowdir_in && %dirpossto%))
+      %fromcell_dir% = 0
+    else if (flowdir_out_b(%cellcol%, %cellrow%) <> %dirfrom%)
+      %fromcell_dir% = 0
+    /*then test current cell with respect to source cell slope-end factor cutoff 
+    /*criteria; if met, set to 0 to start cumulation at and below the cell.
+    else if (down_slp_ang lt (down_slp_ang(%cellcol%, %cellrow%) * slp_end_fac))
+      %fromcell_dir% = 0
+    else if (down_slp_ang ge (down_slp_ang(%cellcol%, %cellrow%) * slp_end_fac))
+      %fromcell_dir% = slp_lgth_prev(%cellcol%, %cellrow%) + ~
+          slp_lgth_cell(%cellcol%, %cellrow%)
+    else if (isnull(slp_lgth_prev(%cellcol%, %cellrow%)))
+      %fromcell_dir% = setnull(1 eq 1)
+    else
+      %fromcell_dir% = 0
+    endif
+  &end
+
+  /*select max cumulative slope length in fromcell dir grids, else beg. cell value.
+  &if [exists slp_lgth_cum -grid] &then
+    kill slp_lgth_cum all
+  slp_lgth_cum = max(fromcell_n, fromcell_ne, fromcell_e, fromcell_se, ~
+      fromcell_s, fromcell_sw, fromcell_w, fromcell_nw, slp_lgth_beg)
+
+  /*test for the last iteration filling in all cells with data.
+  &sv nodata = [show scalar ndcell]
+  &if %nodata% eq 0 &then
+    &sv finished = .TRUE.
+  /*test for any residual nodata cells.
+  &if [exists slp_lgth_nd -grid] &then
+    kill slp_lgth_nd all
+  if (isnull(slp_lgth_cum) and not isnull(flowdir_out_b))
+    slp_lgth_nd = 1
+  else
+    slp_lgth_nd = 0
+  endif
+  ndcell = scalar(0)
+  docell
+    ndcell }= slp_lgth_nd
+  end
+
+  /*amended previous code to allow monitoring of whether nodata cells decrease with 
+  /*each iteration; if no more decrease after 2 iterations, end the iterative loop 
+  /*and proceed to creation of LS grid; in this event the likelihood is that there 
+  /*are one or more small nodata strips along outer boundary, probably within the 
+  /*10-cell buffer area of the input DEM and not within the actual study area.
+  &if [exists nd_chg2 -grid] &then
+    kill nd_chg2 all
+  if (slp_lgth_nd eq slp_lgth_nd2)
+    nd_chg2 = 0
+  else 
+    nd_chg2 = 1
+  endif
+    ndchg2 = scalar(0)
+  docell
+    ndchg2 }= nd_chg2
+  end 
+  &sv nd2 = [show scalar ndchg2]
+  &if %nd2% eq 0 &then
+    &do
+      &sv finished = .TRUE.  
+      &sv warn = .TRUE.
+    &end    
+
+  /*remove temporary directional grids from the latest iteration.
+  kill (!fromcell_n fromcell_ne fromcell_e fromcell_se fromcell_s fromcell_sw ~
+    fromcell_w fromcell_nw!)
+  /*amended previous code to move nodata-test grid 1 notch to prepare for next loop.
+  &if [exists slp_lgth_nd2 -grid] &then
+    kill slp_lgth_nd2 all
+  copy slp_lgth_nd slp_lgth_nd2
+  kill slp_lgth_nd all
+
+  &sv n = %n% + 1
+  &type This begins slope length iteration %n%
+
+&end
+
+/*change name of cumulation grid from final iteration to max, clip, rename back again.
+rename slp_lgth_cum slp_lgth_max
+/*resetting window to normal extent.
+setwindow ..\%dem_input%
+&if [exists slp_lgth_max2 -grid] &then
+  kill slp_lgth_max2 all
+rename slp_lgth_max slp_lgth_max2
+slp_lgth_max = slp_lgth_max2
+kill slp_lgth_max2 all
+
+/*convert slope length in meters to feet if necessary.
+&if [exists slp_lgth_ft -grid] &then
+  kill slp_lgth_ft all
+&if %demunits% eq meters &then
+  slp_lgth_ft = slp_lgth_max div 0.3048
+&else
+  slp_lgth_ft = slp_lgth_max
+
+/*amended previous code to assign RUSLE slope length exponent (m) from rill/interrill 
+/*ratio; assuption is that rangeland/woodland has low susceptibility; used guidelines 
+/*in Table 4-5 in McCool et al. (1997) with minor extrapolation for end members.
+&if [exists m_slpexp -grid] &then
+  kill m_slpexp all
+if (down_slp_ang le 0.1)
+  m_slpexp = 0.01
+else if ((down_slp_ang gt 0.1) and (down_slp_ang lt 0.2))
+  m_slpexp = 0.02
+else if ((down_slp_ang ge 0.2) and (down_slp_ang lt 0.4))
+  m_slpexp = 0.04
+else if ((down_slp_ang ge 0.4) and (down_slp_ang lt 0.85))
+  m_slpexp = 0.08
+else if ((down_slp_ang ge 0.85) and (down_slp_ang lt 1.4))
+  m_slpexp = 0.14
+else if ((down_slp_ang ge 1.4) and (down_slp_ang lt 2.0))
+  m_slpexp = 0.18
+else if ((down_slp_ang ge 2.0) and (down_slp_ang lt 2.6))
+  m_slpexp = 0.22
+else if ((down_slp_ang ge 2.6) and (down_slp_ang lt 3.1))
+  m_slpexp = 0.25
+else if ((down_slp_ang ge 3.1) and (down_slp_ang lt 3.7))
+  m_slpexp = 0.28
+else if ((down_slp_ang ge 3.7) and (down_slp_ang lt 5.2))
+  m_slpexp = 0.32
+else if ((down_slp_ang ge 5.2) and (down_slp_ang lt 6.3))
+  m_slpexp = 0.35
+else if ((down_slp_ang ge 6.3) and (down_slp_ang lt 7.4))
+  m_slpexp = 0.37
+else if ((down_slp_ang ge 7.4) and (down_slp_ang lt 8.6))
+  m_slpexp = 0.40
+else if ((down_slp_ang ge 8.6) and (down_slp_ang lt 10.3))
+  m_slpexp = 0.41
+else if ((down_slp_ang ge 10.3) and (down_slp_ang lt 12.9))
+  m_slpexp = 0.44
+else if ((down_slp_ang ge 12.9) and (down_slp_ang lt 15.7))
+  m_slpexp = 0.47
+else if ((down_slp_ang ge 15.7) and (down_slp_ang lt 20.0))
+  m_slpexp = 0.49
+else if ((down_slp_ang ge 20.0) and (down_slp_ang lt 25.8))
+  m_slpexp = 0.52
+else if ((down_slp_ang ge 25.8) and (down_slp_ang lt 31.5))
+  m_slpexp = 0.54
+else if ((down_slp_ang ge 31.5) and (down_slp_ang lt 37.2))
+  m_slpexp = 0.55
+else if (down_slp_ang ge 37.2)
+  m_slpexp = 0.56
+endif
+
+/*amended previous code to calculate L constituent by slopelength/72.6 to the 
+/*mth power as defined by McCool et al. (1997).
+&if [exists %sa%_ruslel -grid] &then
+  kill %sa%_ruslel all
+docell
+  %sa%_ruslel = pow((slp_lgth_ft div 72.6), m_slpexp)
+end
+
+/*amended previous USLE code to calculate S constituent using different algorithms 
+/*for lt or ge sin of 9% slope as defined by McCool et al. (1997), where: 
+/*radian = 57.2958 deg (factor = 6.2832);  deg (theta) = inv tan of % gradient;
+/*(e.g., 0.09 slope gradient = 5.1428 deg angle = 0.0898 radians).
+/*NOTE: RDV 12/03 Fixed previous computational order-of-operations problem below
+&if [exists %sa%_rusles -grid] &then
+  kill %sa%_rusles all
+%sa%_rusles = con (down_slp_ang ge 5.1428, 16.8 * (sin(down_slp_ang div deg)) - .50, ~
+    10.8 * (sin(down_slp_ang div deg)) + .03)
+
+/*multiply L and S constituents to produce LS-factor integer grid clipped to the 
+/*watershed boundary, use .vat to perform statistical analysis as necessary;
+/*define grid value as * 100 to retain significant digits for future calculations.
+/*NOTE: RDV 8/03 Fixed previous rounding problem in integer function below
+setwindow ..\%wshed%
+setmask ..\%wshed%
+&if [exists %sa%_ruslels2 -grid] &then
+  kill %sa%_ruslels2 all
+%sa%_ruslels2 = int (((%sa%_ruslel * %sa%_rusles) * 100) + .5)
+buildvat %sa%_ruslels2
+
+q
+
+/*define actual LS-factor attribute as "value/100" rounded to 2 decimal places.
+additem %sa%_ruslels2.vat %sa%_ruslels2.vat ls_factor 8 8 n 2
+tables
+sel %sa%_ruslels2.vat
+calc ls_factor = value / 100
+q
+
+w
+
+&echo &off
+&return
+

@@ -22,4 +22,11 @@ raster's name.
    
 3. CSV2PtsShp
    This is a very simple but useful script. To convert .CSV points coordinates to ESRI shapefile.
-4. 
+4. RUSLE_LS
+   Calculates LS Factor using DEM data according to RUSLE-based criteria.
+   -- RUSLE_LS_4_PC.AML is a AML script based on Arcinfo workstation, code original from Rick D. Van Remortel etc.
+   -- RUSLE_LS(Tool).py is a python version to accomplish the same function based on ArcGIS 9.3.
+   This is my advice, if your data is huge, please use the AML code, since the python version is less efficient.
+   
+   BTW, detail information about the Arctoolbox can be found via http://bbs.esrichina-bj.cn/ESRI/viewthread.php?tid=80578.
+5. 
