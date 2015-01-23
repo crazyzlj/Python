@@ -29,4 +29,6 @@ raster's name.
    This is my advice, if your data is huge, please use the AML code, since the python version is less efficient.
    
    BTW, detail information about the Arctoolbox can be found via http://bbs.esrichina-bj.cn/ESRI/viewthread.php?tid=80578.
-5. 
+5. Hydrograph
+   This script is based on matplotlib. Download the script and test data, you can get the hydrograph.
+6.
