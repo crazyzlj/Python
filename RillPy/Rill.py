@@ -22,9 +22,9 @@ def IdentifyRillRidges(HillslpFile,StreamFile,FlowDirFile,FlowAccFile,WatershedF
     RillStartIdx = GetRillStartIdx(StreamLinks,nodata,FlowDir)
     RillProfInfo = []
     RillEdge = numpy.ones((nrows,ncols))
-    RillEdge = RillEdge * nodata
+    RillEdge = RillEdge * -9999
     RealRill = numpy.ones((nrows,ncols))
-    RealRill = RealRill * nodata
+    RealRill = RealRill * -9999
     Accum = []
     AccumAll = []
     for rillIdx in RillStartIdx:
@@ -85,10 +85,74 @@ def IdentifyRillRidges(HillslpFile,StreamFile,FlowDirFile,FlowAccFile,WatershedF
 #        print i
     Accum.sort()
     AccumAll.sort()
-    print Accum
-    print AccumAll
-    WriteAscFile(folder + os.sep + "RealRill.asc", RealRill,ncols,nrows,geotrans,nodata)
-    WriteAscFile(folder + os.sep + "RillEdge.asc", RillEdge,ncols,nrows,geotrans,nodata)
+    #print Accum
+    #print AccumAll
+    WriteAscFile(folder + os.sep + "RealRill.asc", RealRill,ncols,nrows,geotrans,-9999)
+    WriteAscFile(folder + os.sep + "RillEdge.asc", RillEdge,ncols,nrows,geotrans,-9999)
+def SingleUpStream(curSege,row,col,flowdir,stream,hillslp,watershed,cHillslp,cWatershed,nodata):
+    nrows,ncols = flowdir.shape
+    for di in [-1,0,1]:
+        for dj in [-1,0,1]:
+            ci = row + di
+            cj = col + dj
+            if ci < 0 or cj < 0 or ci >= nrows or cj >= ncols:
+                continue
+            elif downstream_index(flowdir[ci][cj],ci,cj)==(row,col) and stream[ci][cj] == nodata and hillslp[ci][cj] == cHillslp and watershed[ci][cj] == cWatershed:
+                curSege.append([ci,cj])
+                SingleUpStream(curSege,ci,cj,flowdir,stream,hillslp,watershed,cHillslp,cWatershed,nodata)
+                break
+                
+                
+def UpStreamRoute(WatershedFile,HillslpFile,StreamFile,FlowDirFile,RillExtDir):
+    stream = ReadRaster(StreamFile).data
+    nrows,ncols = stream.shape
+    nodata = ReadRaster(StreamFile).noDataValue
+    geotrans = ReadRaster(StreamFile).geotrans
+    hillslp = ReadRaster(HillslpFile).data
+    flowdir = ReadRaster(FlowDirFile).data
+    watershed = ReadRaster(WatershedFile).data
 
+    UpStream = numpy.ones((nrows,ncols))
+    UpStream = UpStream * -9999
+    UpStreamShp = RillExtDir + os.sep + "UpStream.shp"
     
+    segement_info = []
+    # A list that will hold each of the Polyline objects
+    StreamPts = []
+    for i in range(nrows):
+        for j in range(ncols):
+            if(stream[i][j] != nodata):
+                StreamPts.append((i,j))
     
+    for pt in StreamPts:
+        tempSegements = []
+        cRow,cCol = pt
+        tempSegement = [[cRow,cCol]]
+        for di in [-1,0,1]:
+            for dj in [-1,0,1]:
+                ci = cRow + di
+                cj = cCol + dj
+                if ci < 0 or cj < 0 or ci >= nrows or cj >= ncols:
+                    continue
+                if downstream_index(flowdir[ci][cj],ci,cj)==(cRow,cCol) and stream[ci][cj] == nodata:
+                    curSege = tempSegement
+                    curSege.append([ci,cj])
+                    SingleUpStream(curSege,ci,cj,flowdir,stream,hillslp,watershed,hillslp[ci][cj],watershed[ci][cj],nodata)
+                    tempSegements.append(curSege)
+                    break
+        segement_info.extend(tempSegements)
+    print segement_info
+    for grids in segement_info:
+        for grid in grids:
+            row = grid[0]
+            col = grid[1]
+            grid[0] = geotrans[0] + ( col + 0.5 ) * geotrans[1]
+            grid[1] = geotrans[3] - ( row - 0.5 ) * geotrans[1]
+    segements = []
+    for segement in segement_info:
+        # Create a Polyline object based on the array of points
+        # Append to the list of Polyline objects
+        segements.append(
+            arcpy.Polyline(
+                arcpy.Array([arcpy.Point(*coords) for coords in segement])))
+    arcpy.CopyFeatures_management(segements, UpStreamShp)

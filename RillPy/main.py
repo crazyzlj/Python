@@ -22,7 +22,7 @@ if __name__ == '__main__':
     ## Input params
     DEMsrc = r'E:\MasterBNU\RillMorphology\test\testdem'
     rootdir = r'E:\MasterBNU\RillMorphology\20150130'
-    streamTHR = 0.1
+    streamTHR = 0.01
 
     ## Run algorithms
     tempDir,PreprocessDir,RillExtDir,StatsDir = Util.makeResultFolders(rootdir)
@@ -41,18 +41,22 @@ if __name__ == '__main__':
     CurvProfFile = PreprocessDir + os.sep + "curvprof"
     FlowDirFile = PreprocessDir + os.sep + "flowdir"
     FlowAccFile = PreprocessDir + os.sep + "flowacc"
-
+    
+    Rill.UpStreamRoute(WatershedFile,HillslpFile,StreamFile,FlowDirFile,RillExtDir)
     #Rill.IdentifyRillRidges(HillslpFile,StreamFile,FlowDirFile,FlowAccFile,WatershedFile,DEMfil,RillExtDir)
-    alpha = 25
-    beta = 5
-    ShoulderPtsOrig = RillExtDir + os.sep + "ShoulderPtsOrig.asc"
+    
+    #alpha = 25
+    #beta = 5
+    #ShoulderPtsOrig = RillExtDir + os.sep + "ShoulderPtsOrig.asc"
     #ShoulderLine.IdentifyRillShoulderPts(AspectFile,SlopeFile,CurvProfFile,alpha,beta,ShoulderPtsOrig)
-    num = 50
-    ShoulderPts = RillExtDir + os.sep + "ShoulderPts.asc"
+    #num = 50
+    #ShoulderPts = RillExtDir + os.sep + "ShoulderPts.asc"
     #Util.RemoveLessPts(ShoulderPtsOrig,num,ShoulderPts)
-    Basin = PreprocessDir + os.sep + "basin"
-    basinID = [1,4,25,26]
-    BasinBoundary = PreprocessDir + os.sep + "basinBounday.asc"
+    #Basin = PreprocessDir + os.sep + "basin"
+    #Watershed = tempDir + os.sep + "watershed"
+    #basinID = [1,4,25,26]
+    #BasinBoundary = PreprocessDir + os.sep + "basinBounday.asc"
     #Subbasin.ExtractBasinBoundary(Basin,basinID,BasinBoundary)
-    Shoulder = RillExtDir + os.sep + "Shoulder.asc"
-    ShoulderLine.RillShoulderLine(BasinBoundary,FlowDirFile,ShoulderPts,Shoulder)
+    #Shoulder = RillExtDir + os.sep + "Shoulder.asc"
+    #ShoulderLine.RillShoulderSegement(BasinBoundary,FlowDirFile,ShoulderPts,Shoulder)
+    #ShoulderLine.RillShoulder(Watershed,FlowDirFile,ShoulderPts,tempDir,Shoulder)

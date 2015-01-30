@@ -7,6 +7,7 @@ from arcpy import env
 from Util import *
 
 def GenerateStreamNetByTHR(DEMbuf,FlowDirFile,FlowAccFile,threshold,folder):
+    print "Generating initial stream network according to threshold of flow accumulation..."
     env.workspace = folder
     arcpy.gp.overwriteOutput = 1
     arcpy.CheckOutExtension("Spatial")
@@ -37,6 +38,7 @@ def GenerateStreamNetByTHR(DEMbuf,FlowDirFile,FlowAccFile,threshold,folder):
     StreamFile = folder + os.sep + "streamlinks"
     return (StreamFile,StreamOrderFile,WatershedFile)
 def RillIndexCalc(StreamOrderFile,DEMbuf,tempDir,StatsDir):
+    print "Calculating rill indexes..."
     #input StreamOrderFile and DEMbuf,output CSV files.
     env.workspace = tempDir
     arcpy.gp.overwriteOutput = 1
@@ -50,8 +52,15 @@ def RillIndexCalc(StreamOrderFile,DEMbuf,tempDir,StatsDir):
     arcpy.sa.ExtractValuesToPoints("StreamNDsStart.shp",DEMbuf,"StreamNDsElevStart.shp","NONE", "VALUE_ONLY")
     arcpy.sa.ExtractValuesToPoints("StreamNDsEnd.shp",DEMbuf,"StreamNDsElevEnd.shp","NONE", "VALUE_ONLY")
     
-#def GenerateWatershedByStream(${2:}):
-#    ${0}
+def GenerateWatershedByStream(StreamFile,FlowDirFile, tempDir, WatershedFile):
+    print "Regenerating watershed by real rill network..."
+    tempStream = tempDir + os.sep + "StmNet"
+    arcpy.ASCIIToRaster_conversion(StreamFile, tempStream,"INTEGER")    
+    Watershed = arcpy.sa.Watershed(FlowDirFile,tempStream,"VALUE")
+    tempWtshd = tempDir + os.sep + "WtShd"
+    Watershed.save(tempWtshd)
+    GRID2ASC(tempWtshd,WatershedFile)
+    
 def isEdge(raster,row,col,nodata):
     nrows,ncols = raster.shape
     if (row == 0 or row == nrows-1 or col == 0 or col == ncols-1) and raster[row][col] != nodata:

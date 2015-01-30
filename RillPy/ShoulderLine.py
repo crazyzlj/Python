@@ -2,7 +2,8 @@
 #coding=utf-8
 from Util import *
 from Hillslope import *
-
+from Subbasin import *
+import os,sys
 
 def IdentifyRillShoulderPts(Aspect,Slope,ProfC,alpha,beta,ShoulderPts):
     aspect = ReadRaster(Aspect).data
@@ -69,7 +70,7 @@ def IdentifyRillShoulderPts(Aspect,Slope,ProfC,alpha,beta,ShoulderPts):
                         continue
     WriteAscFile(ShoulderPts, ShoulderPtsMtx,ncols,nrows,geotrans,-9999)
             
-def RillShoulderLine(Boundary,FlowDir,ShoulderPts,ShoulderFile):
+def RillShoulderSegement(Boundary,FlowDir,ShoulderPts,ShoulderFile):
     flowdir = ReadRaster(FlowDir).data
     flownodata = ReadRaster(FlowDir).noDataValue
     geotrans = ReadRaster(FlowDir).geotrans
@@ -85,7 +86,7 @@ def RillShoulderLine(Boundary,FlowDir,ShoulderPts,ShoulderFile):
                 bndIdx.append((i,j))
     iterate = 0
     changed = 1
-    while not(changed == 0 or iterate > 1000):
+    while not(changed == 0 or iterate > 150):
         print "iterate time:%s, changed num:%s, boundary num:%s" % (iterate,changed,len(bndIdx))
         changed = 0
         tempbndIdx = []
@@ -107,7 +108,16 @@ def RillShoulderLine(Boundary,FlowDir,ShoulderPts,ShoulderFile):
     for sd in bndIdx:
         shoulder[sd[0]][sd[1]] = 1
     WriteAscFile(ShoulderFile, shoulder,ncols,nrows,geotrans,nodata)
-                
-        
+
+def RillShoulder(BasinFile,FlowDir,ShoulderPts,tempDir,ShoulderFile):
+    UniqueBasinId = GetUniqueValues(BasinFile)
+    print UniqueBasinId
+    for BsnID in UniqueBasinId:
+        tempBsnID = []
+        tempBsnID.append(BsnID)
+        BsnASC = tempDir + os.sep + "BsnID" + str(BsnID) + ".asc"
+        ExtractBasinBoundary(BasinFile,tempBsnID,BsnASC)
+        ShldASC = tempDir + os.sep + "Shld" + str(BsnID) + ".asc"
+        RillShoulderSegement(BsnASC,FlowDir,ShoulderPts,ShldASC)
     
     

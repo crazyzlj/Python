@@ -42,6 +42,7 @@ def isStreamSegmentCell(StreamRaster, nodata, row, col, flow_dir):
         else:
             return 1
 def GetRillStartIdx(StreamLinks,nodata,FlowDir):
+    # Get first cell index of each rill
     nrows,ncols = StreamLinks.shape
     countRill = 0
     countmid = 0
@@ -57,7 +58,7 @@ def GetRillStartIdx(StreamLinks,nodata,FlowDir):
             elif (isStreamSegmentCell(StreamLinks,nodata,i,j,FlowDir) == 2):
                 countmid = countmid + 1
                 
-    print "Rill number is : %s,%s,%s" % (countRill,countmid,countend)
+    #print "Rill number is : %s,%s,%s" % (countRill,countmid,countend)
     return RillStartIdx
 
 def fillUpstreamCells(flow_dir,stream,nodata,hillslp,value,row,col):
@@ -73,7 +74,9 @@ def fillUpstreamCells(flow_dir,stream,nodata,hillslp,value,row,col):
                     hillslp[tempRow][tempCol] = value
                 #print tempRow,tempCol
                 fillUpstreamCells(flow_dir,stream,nodata,hillslp,value,tempRow,tempCol)  
+
 def DelineateHillslopes(StreamFile,FlowDirFile,HillslpFile):
+    print "Delineating hillslopes by watershed..."
     StreamLinks = ReadRaster(StreamFile).data
     nodata = ReadRaster(StreamFile).noDataValue
     geotrans = ReadRaster(StreamFile).geotrans
@@ -87,8 +90,8 @@ def DelineateHillslopes(StreamFile,FlowDirFile,HillslpFile):
                 count = count +1
                 SourcePtsIdx.append((i,j))
                 
-    print "Headwater point:%s" % count
-    test = GetRillStartIdx(StreamLinks,nodata,FlowDir)
+    #print "Headwater point:%s" % count
+    #test = GetRillStartIdx(StreamLinks,nodata,FlowDir)
     HillslopeMtx = numpy.ones((nrows,ncols))
     if nodata != -9999:
         HillslopeMtx = HillslopeMtx * -9999

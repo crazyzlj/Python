@@ -50,7 +50,6 @@ class Raster:
         self.noDataValue = noDataValue
         self.geotrans = geotransform
         self.srs = srs
-        
         self.dx = geotransform[1]
         self.xMin = geotransform[0]
         self.xMax = geotransform[0] + nCols*geotransform[1]
@@ -181,15 +180,30 @@ def GRID2ASC(GRID,ASC):
             if grid[i][j] == nodata:
                 grid[i][j] = -9999
     WriteAscFile(ASC, grid,ncols,nrows,geotrans,-9999)    
+def GetUniqueValues(RasterFile):
+    raster = ReadRaster(RasterFile).data
+    nodata = ReadRaster(RasterFile).noDataValue
+    #geotrans = ReadRaster(RasterFile).geotrans
+    nrows,ncols = raster.shape
+    value = []
+    for i in range(nrows):
+        for j in range(ncols):
+            if raster[i][j] != nodata:
+                if not (raster[i][j] in value):
+                    value.append(raster[i][j])
+    value = list(set(value))
+    return value
 ##  End Utility Functions ##
 
 ## DEM Preprocessing  ##
 def UtilHydroFiles(DEMsrc, folder):
+    print "Calculating fundamental hydrological parameters from DEM..."
     env.workspace = folder
     arcpy.gp.overwriteOutput = 1
     arcpy.CheckOutExtension("Spatial")
     ## Set the source dem with one cell buffer to 
     ## avoid NODATA around the edges
+    print "   --- DEM buffer 1 cell..."
     dem_des = arcpy.gp.describe(DEMsrc)
     cellsize = max(dem_des.MeanCellWidth,dem_des.MeanCellHeight)
     extent_src = dem_des.Extent
@@ -198,9 +212,11 @@ def UtilHydroFiles(DEMsrc, folder):
     env.cellSize = cellsize
     Exec = "Con(IsNull(\"%s\"),FocalStatistics(\"%s\", NbrRectangle(3, 3, \"CELL\"), \"MEAN\", \"DATA\"),\"%s\")" % (DEMsrc, DEMsrc, DEMsrc)
     arcpy.gp.RasterCalculator_sa(Exec, "DEMbuf")
+    print "   --- fill depression..."
     env.extent = dem_des.Extent
     DEMfil = arcpy.sa.Fill(DEMsrc)
     DEMfil.save("DEMfil")
+    print "   --- calculating aspect, slope, curvature, flow direction, flow accumulation, basin..."
     Aspect = arcpy.sa.Aspect("DEMfil")
     Slope = arcpy.sa.Slope("DEMfil","DEGREE")
     Flowdir = arcpy.sa.FlowDirection("DEMfil","NORMAL")
@@ -241,6 +257,7 @@ def mkdir(dir):
     if not os.path.exists(dir):
         os.mkdir(dir)
 def makeResultFolders(rootdir):
+    print "Making results' folders..."
     if not os.path.isdir(rootdir):
         if rootdir != "":
             mkdir(rootdir)
