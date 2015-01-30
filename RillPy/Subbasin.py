@@ -78,7 +78,10 @@ def ExtractBasinBoundary(Basin,basinID,BasinBoundary):
     geotrans = ReadRaster(Basin).geotrans
     nrows,ncols = basin.shape
     Boundary = numpy.ones((nrows,ncols))
-    Boundary = Boundary * nodata
+    if nodata != -9999:
+        Boundary = Boundary * -9999
+    else:
+        Boundary = Boundary * nodata
     
     for i in range(nrows):
         for j in range(ncols):
@@ -91,5 +94,5 @@ def ExtractBasinBoundary(Basin,basinID,BasinBoundary):
         for j in range(ncols):
             if isEdge(basin,i,j,nodata):
                 Boundary[i][j] = 1
-    WriteAscFile(BasinBoundary, Boundary,ncols,nrows,geotrans,nodata)
+    WriteAscFile(BasinBoundary, Boundary,ncols,nrows,geotrans,-9999)
     

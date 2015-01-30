@@ -12,8 +12,11 @@ def IdentifyRillShoulderPts(Aspect,Slope,ProfC,alpha,beta,ShoulderPts):
     slope = ReadRaster(Slope).data
     profc = ReadRaster(ProfC).data
     ShoulderPtsMtx = numpy.ones((nrows,ncols))
-    ShoulderPtsMtx = ShoulderPtsMtx * nodata
-    
+    if nodata != -9999:
+        ShoulderPtsMtx = ShoulderPtsMtx * -9999
+    else:
+        ShoulderPtsMtx = ShoulderPtsMtx * nodata
+
     for i in range(nrows):
         for j in range(ncols):
             # North
@@ -64,15 +67,16 @@ def IdentifyRillShoulderPts(Aspect,Slope,ProfC,alpha,beta,ShoulderPts):
                     if (slope[i][j]<slope[i-1][j-1]) and (slope[i+1][j+1]<slope[i][j]) and slope[i][j]>alpha and (slope[i-1][j-1]-slope[i+1][j+1] > beta) and profc[i][j]<0:
                         ShoulderPtsMtx[i][j] = 1
                         continue
-    WriteAscFile(ShoulderPts, ShoulderPtsMtx,ncols,nrows,geotrans,nodata)
+    WriteAscFile(ShoulderPts, ShoulderPtsMtx,ncols,nrows,geotrans,-9999)
             
-def RillShoulderLine(Boundary,FlowDir,ShoulderPts,Shoulder):
+def RillShoulderLine(Boundary,FlowDir,ShoulderPts,ShoulderFile):
     flowdir = ReadRaster(FlowDir).data
-    nodata = ReadRaster(FlowDir).noDataValue
+    flownodata = ReadRaster(FlowDir).noDataValue
     geotrans = ReadRaster(FlowDir).geotrans
     boundary = ReadRaster(Boundary).data
     shoulderpts = ReadRaster(ShoulderPts).data
     nrows,ncols = flowdir.shape
+    nodata = ReadRaster(Boundary).noDataValue
     bndIdx = []
     for i in range(nrows):
         for j in range(ncols):
@@ -80,8 +84,30 @@ def RillShoulderLine(Boundary,FlowDir,ShoulderPts,Shoulder):
                 #print i,j
                 bndIdx.append((i,j))
     iterate = 0
-    changed = 0
-    #while changed > 0 or iterate < 100:
+    changed = 1
+    while not(changed == 0 or iterate > 1000):
+        print "iterate time:%s, changed num:%s, boundary num:%s" % (iterate,changed,len(bndIdx))
+        changed = 0
+        tempbndIdx = []
+        for bnd in bndIdx:
+            if shoulderpts[bnd[0]][bnd[1]] == 1:
+                tempbndIdx.append((bnd[0],bnd[1]))
+            else:
+                row,col = downstream_index(flowdir[bnd[0]][bnd[1]], bnd[0],bnd[1])
+                if row < 0 or row >= nrows or col < 0 or col >= ncols:
+                    tempbndIdx.append((bnd[0],bnd[1]))
+                else:
+                    tempbndIdx.append((row,col))
+                    changed = changed + 1
+        tempbndIdx = list(set(tempbndIdx))
+        bndIdx = tempbndIdx
+        iterate = iterate + 1
+    shoulder = numpy.ones((nrows,ncols))
+    shoulder = shoulder * nodata
+    for sd in bndIdx:
+        shoulder[sd[0]][sd[1]] = 1
+    WriteAscFile(ShoulderFile, shoulder,ncols,nrows,geotrans,nodata)
+                
         
     
     

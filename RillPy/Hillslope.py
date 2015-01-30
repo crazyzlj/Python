@@ -90,8 +90,12 @@ def DelineateHillslopes(StreamFile,FlowDirFile,HillslpFile):
     print "Headwater point:%s" % count
     test = GetRillStartIdx(StreamLinks,nodata,FlowDir)
     HillslopeMtx = numpy.ones((nrows,ncols))
-    HillslopeMtx = HillslopeMtx * nodata
+    if nodata != -9999:
+        HillslopeMtx = HillslopeMtx * -9999
+    else:
+        HillslopeMtx = HillslopeMtx * nodata
     
+
     for SourcePt in SourcePtsIdx:
         #print SourcePt
         cRow,cCol = SourcePt
@@ -156,4 +160,4 @@ def DelineateHillslopes(StreamFile,FlowDirFile,HillslpFile):
                         fillUpstreamCells(FlowDir,StreamLinks,nodata,HillslopeMtx,2,temprow,tempcol)
             previous = current
             current = downstream_index(FlowDir[CurRow][CurCol],CurRow,CurCol)
-    WriteAscFile(HillslpFile, HillslopeMtx,ncols,nrows,geotrans,nodata)
+    WriteAscFile(HillslpFile, HillslopeMtx,ncols,nrows,geotrans,-9999)

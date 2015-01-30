@@ -70,7 +70,7 @@ def ReadRaster(rasterFile):
     srs = osr.SpatialReference()
     srs.ImportFromWkt(ds.GetProjection())
     #print srs.ExportToProj4()
-    if noDataValue is None or noDataValue < -9999:
+    if noDataValue is None:
         noDataValue = -9999
     return Raster(ysize, xsize, data, noDataValue, geotrans, srs) 
 
@@ -171,7 +171,16 @@ def RemoveLessPts(RasterFile,num,OutputRaster):
             else:
                 raster[i][j] = 1
     WriteAscFile(OutputRaster,raster,ncols,nrows,geotrans,nodata)
-    
+def GRID2ASC(GRID,ASC):
+    grid = ReadRaster(GRID).data
+    nodata = ReadRaster(GRID).noDataValue
+    geotrans = ReadRaster(GRID).geotrans
+    nrows,ncols = grid.shape
+    for i in range(nrows):
+        for j in range(ncols):
+            if grid[i][j] == nodata:
+                grid[i][j] = -9999
+    WriteAscFile(ASC, grid,ncols,nrows,geotrans,-9999)    
 ##  End Utility Functions ##
 
 ## DEM Preprocessing  ##

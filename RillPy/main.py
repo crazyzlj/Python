@@ -21,7 +21,7 @@ import ShoulderLine
 if __name__ == '__main__':
     ## Input params
     DEMsrc = r'E:\MasterBNU\RillMorphology\test\testdem'
-    rootdir = r'E:\MasterBNU\RillMorphology\20150129'
+    rootdir = r'E:\MasterBNU\RillMorphology\20150130'
     streamTHR = 0.1
 
     ## Run algorithms
@@ -29,8 +29,9 @@ if __name__ == '__main__':
 #    DEMbuf,DEMfil,SlopeFile,AspectFile,FlowDirFile,FlowAccFile,CurvProfFile,CurvPlanFile = Util.UtilHydroFiles(DEMsrc, PreprocessDir)
 #    StreamFile,StreamOrderFile,WatershedFile = Subbasin.GenerateStreamNetByTHR(DEMbuf,FlowDirFile,FlowAccFile,streamTHR,tempDir)
 #    Subbasin.RillIndexCalc(StreamOrderFile,DEMbuf,tempDir,StatsDir)
-#    HillslpFile = RillExtDir + os.sep + "HillSlp.asc"
-#    Hillslope.DelineateHillslopes(StreamFile,FlowDirFile,HillslpFile)    
+
+    HillslpFile = RillExtDir + os.sep + "HillSlp.asc"
+    #Hillslope.DelineateHillslopes(StreamFile,FlowDirFile,HillslpFile)    
 
     DEMfil = PreprocessDir + os.sep + "DEMfil"
     StreamFile = tempDir + os.sep + "StreamLinks"
@@ -40,7 +41,7 @@ if __name__ == '__main__':
     CurvProfFile = PreprocessDir + os.sep + "curvprof"
     FlowDirFile = PreprocessDir + os.sep + "flowdir"
     FlowAccFile = PreprocessDir + os.sep + "flowacc"
-    HillslpFile = RillExtDir + os.sep + "HillSlp.asc"
+
     #Rill.IdentifyRillRidges(HillslpFile,StreamFile,FlowDirFile,FlowAccFile,WatershedFile,DEMfil,RillExtDir)
     alpha = 25
     beta = 5
