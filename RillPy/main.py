@@ -26,7 +26,7 @@ if __name__ == '__main__':
 
     ## Run algorithms
     tempDir,PreprocessDir,RillExtDir,StatsDir = Util.makeResultFolders(rootdir)
-#    DEMbuf,DEMfil,SlopeFile,AspectFile,FlowDirFile,FlowAccFile,CurvProfFile,CurvPlanFile = Util.UtilHydroFiles(DEMsrc, PreprocessDir)
+#    DEMbuf,DEMfil,SlopeFile,SOSFile,AspectFile,FlowDirFile,FlowAccFile,CurvProfFile,CurvPlanFile = Util.UtilHydroFiles(DEMsrc, PreprocessDir)
 #    StreamFile,StreamOrderFile,WatershedFile = Subbasin.GenerateStreamNetByTHR(DEMbuf,FlowDirFile,FlowAccFile,streamTHR,tempDir)
 #    Subbasin.RillIndexCalc(StreamOrderFile,DEMbuf,tempDir,StatsDir)
 
@@ -38,11 +38,14 @@ if __name__ == '__main__':
     WatershedFile = tempDir + os.sep + "watershed"
     AspectFile = PreprocessDir + os.sep + "aspect"
     SlopeFile = PreprocessDir + os.sep + "slope"
+    SOSFile = PreprocessDir + os.sep + "sos"
     CurvProfFile = PreprocessDir + os.sep + "curvprof"
     FlowDirFile = PreprocessDir + os.sep + "flowdir"
     FlowAccFile = PreprocessDir + os.sep + "flowacc"
-    
-    Rill.UpStreamRoute(WatershedFile,HillslpFile,StreamFile,FlowDirFile,RillExtDir)
+    UpStreamRouteFile = RillExtDir + os.sep + "UpstreamRoute.txt"
+    ShoulderptsFile = RillExtDir + os.sep + "Shoulderpts.asc"
+    Rill.UpStreamRoute(DEMfil,WatershedFile,HillslpFile,StreamFile,FlowDirFile,RillExtDir,UpStreamRouteFile)
+    Rill.Shoulderpts(UpStreamRouteFile,SOSFile,RillExtDir,ShoulderptsFile)
     #Rill.IdentifyRillRidges(HillslpFile,StreamFile,FlowDirFile,FlowAccFile,WatershedFile,DEMfil,RillExtDir)
     
     #alpha = 25

@@ -106,8 +106,15 @@ def UpStreamCell(row,col,flowdir,stream,watershed,cWatershed,nodata,curBoundCell
         for pt in curUpCell:
             cRow,cCol = pt
             UpStreamCell(cRow,cCol,flowdir,stream,watershed,cWatershed,nodata,curBoundCells)
-                
-def UpStreamRoute(WatershedFile,HillslpFile,StreamFile,FlowDirFile,RillExtDir):
+def SingleDownstream(cell,flowdir,stream,nodata):
+    curDownStream = []
+    crow,ccol = cell
+    curDownStream.append([crow,ccol])
+    while stream[crow][ccol] == nodata :
+        crow,ccol = downstream_index(flowdir[crow][ccol],crow,ccol)
+        curDownStream.append([crow,ccol])
+    return curDownStream
+def UpStreamRoute(DEMfil,WatershedFile,HillslpFile,StreamFile,FlowDirFile,RillExtDir,UpStreamRouteFile):
     stream = ReadRaster(StreamFile).data
     nrows,ncols = stream.shape
     nodata = ReadRaster(StreamFile).noDataValue
@@ -115,13 +122,11 @@ def UpStreamRoute(WatershedFile,HillslpFile,StreamFile,FlowDirFile,RillExtDir):
     hillslp = ReadRaster(HillslpFile).data
     flowdir = ReadRaster(FlowDirFile).data
     watershed = ReadRaster(WatershedFile).data
-
+    demfil = ReadRaster(DEMfil).data
     UpStream = numpy.ones((nrows,ncols))
     UpStream = UpStream * -9999
     UpStreamShp = RillExtDir + os.sep + "UpStream.shp"
     
-    segement_info = []
-    # A list that will hold each of the Polyline objects
     StreamPts = []
     for i in range(nrows):
         for j in range(ncols):
@@ -136,32 +141,23 @@ def UpStreamRoute(WatershedFile,HillslpFile,StreamFile,FlowDirFile,RillExtDir):
         boundCells.extend(curBoundCells)
     BoundRaster = numpy.ones((nrows,ncols))
     BoundRaster = BoundRaster * -9999
+    segement_info = []
+    # A list that will hold each of the Polyline objects
     for cell in boundCells:
         BoundRaster[cell[0]][cell[1]] = 1
+        segement_info.append(SingleDownstream(cell,flowdir,stream,nodata))
+    #print segement_info
     WriteAscFile(RillExtDir + os.sep + "BoundCell.asc", BoundRaster,ncols,nrows,geotrans,-9999)
-#        tempSegements = []
-#        cRow,cCol = pt
-#        tempSegement = [[cRow,cCol]]
-#        for di in [-1,0,1]:
-#            for dj in [-1,0,1]:
-#                ci = cRow + di
-#                cj = cCol + dj
-#                if ci < 0 or cj < 0 or ci >= nrows or cj >= ncols:
-#                    continue
-#                if downstream_index(flowdir[ci][cj],ci,cj)==(cRow,cCol) and stream[ci][cj] == nodata:
-#                    curSege = tempSegement
-#                    curSege.append([ci,cj])
-#                    SingleUpStream(curSege,ci,cj,flowdir,stream,hillslp,watershed,hillslp[ci][cj],watershed[ci][cj],nodata)
-#                    tempSegements.append(curSege)
-#                    break
-#        segement_info.extend(tempSegements)
-#    print segement_info
+    f = open(UpStreamRouteFile,'w')
+    f.write(str(segement_info))
+    f.close()
+#    arcpy.gp.overwriteOutput = 1
 #    for grids in segement_info:
 #        for grid in grids:
 #            row = grid[0]
 #            col = grid[1]
 #            grid[0] = geotrans[0] + ( col + 0.5 ) * geotrans[1]
-#            grid[1] = geotrans[3] - ( row - 0.5 ) * geotrans[1]
+#            grid[1] = geotrans[3] - ( row + 0.5 ) * geotrans[1]
 #    segements = []
 #    for segement in segement_info:
 #        # Create a Polyline object based on the array of points
@@ -170,3 +166,43 @@ def UpStreamRoute(WatershedFile,HillslpFile,StreamFile,FlowDirFile,RillExtDir):
 #            arcpy.Polyline(
 #                arcpy.Array([arcpy.Point(*coords) for coords in segement])))
 #    arcpy.CopyFeatures_management(segements, UpStreamShp)
+#    RouteElev = []
+#    for grids in segement_info:
+#        curRouteElev = []
+#        for grid in grids:
+#            ci,cj = grid
+#            curRouteElev.append(demfil[ci][cj])
+#        RouteElev.append(curRouteElev)
+#    ElevFile = RillExtDir + os.sep + "RouteElevs.txt"
+#    f = open(ElevFile,'w')
+#    for elev in RouteElev:
+#        f.write(str(elev))
+#    f.close()
+def Shoulderpts(UpStreamRouteFile,SOSFile,RillExtDir,ShoulderptsFile):
+    f = open(UpStreamRouteFile,'r')
+    segement_info = eval(f.readline())
+    f.close()
+    sos = ReadRaster(SOSFile).data
+    nrows,ncols = sos.shape
+    nodata = ReadRaster(SOSFile).noDataValue
+    geotrans = ReadRaster(SOSFile).geotrans
+    
+    shoulderpts = numpy.ones((nrows,ncols))
+    shoulderpts = shoulderpts * -9999
+    RouteSOS = []
+    for grids in segement_info:
+        curRouteSOS = []
+        for grid in grids:
+            ci,cj = grid
+            curRouteSOS.append(sos[ci][cj])
+        RouteSOS.append(curRouteSOS)
+    SOSRoute = RillExtDir + os.sep + "SOSRoute.txt"
+    f = open(SOSRoute,'w')
+    for sos in RouteSOS:
+        f.write(str(sos))
+    f.close()
+    
+    
+    WriteAscFile(ShoulderptsFile, shoulderpts,ncols,nrows,geotrans,-9999)
+    
+    

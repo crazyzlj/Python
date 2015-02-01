@@ -219,12 +219,15 @@ def UtilHydroFiles(DEMsrc, folder):
     print "   --- calculating aspect, slope, curvature, flow direction, flow accumulation, basin..."
     Aspect = arcpy.sa.Aspect("DEMfil")
     Slope = arcpy.sa.Slope("DEMfil","DEGREE")
+    
     Flowdir = arcpy.sa.FlowDirection("DEMfil","NORMAL")
     Curvature = arcpy.sa.Curvature("DEMfil","","curvprof","curvplan")
     Curvature.save("curv")
     Slope.save("slope")
     Aspect.save("aspect")
     Flowdir.save("flowdir")
+    SOS = arcpy.sa.Slope("slope","DEGREE")
+    SOS.save("sos")
     FlowLen = arcpy.sa.FlowLength("flowdir","DOWNSTREAM")
     FlowLen.save("flowlen")
     FlowAcc = arcpy.sa.FlowAccumulation("flowdir","","FLOAT")
@@ -236,13 +239,14 @@ def UtilHydroFiles(DEMsrc, folder):
     DEMbuf = folder + os.sep + "DEMbuf"
     DEMfil = folder + os.sep + "DEMfil"
     SlopeFile = folder + os.sep + "slope"
+    SOSFile = folder + os.sep + "sos"
     AspectFile = folder + os.sep + "aspect"
     FlowDirFile = folder + os.sep + "flowdir"
     FlowAccFile = folder + os.sep + "flowacc"
     CurvProfFile = folder + os.sep + "curvprof"
     CurvPlanFile = folder + os.sep + "curvplan"
     
-    return (DEMbuf,DEMfil,SlopeFile,AspectFile,FlowDirFile,FlowAccFile,CurvProfFile,CurvPlanFile)
+    return (DEMbuf,DEMfil,SlopeFile,SOSFile,AspectFile,FlowDirFile,FlowAccFile,CurvProfFile,CurvPlanFile)
 
 ## End DEM Preprocessing ##
 
