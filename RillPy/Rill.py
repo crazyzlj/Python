@@ -89,19 +89,23 @@ def IdentifyRillRidges(HillslpFile,StreamFile,FlowDirFile,FlowAccFile,WatershedF
     #print AccumAll
     WriteAscFile(folder + os.sep + "RealRill.asc", RealRill,ncols,nrows,geotrans,-9999)
     WriteAscFile(folder + os.sep + "RillEdge.asc", RillEdge,ncols,nrows,geotrans,-9999)
-def SingleUpStream(curSege,row,col,flowdir,stream,hillslp,watershed,cHillslp,cWatershed,nodata):
+def UpStreamCell(row,col,flowdir,stream,watershed,cWatershed,nodata,curBoundCells):
     nrows,ncols = flowdir.shape
+    curUpCell = []
     for di in [-1,0,1]:
         for dj in [-1,0,1]:
             ci = row + di
             cj = col + dj
             if ci < 0 or cj < 0 or ci >= nrows or cj >= ncols:
                 continue
-            elif downstream_index(flowdir[ci][cj],ci,cj)==(row,col) and stream[ci][cj] == nodata and hillslp[ci][cj] == cHillslp and watershed[ci][cj] == cWatershed:
-                curSege.append([ci,cj])
-                SingleUpStream(curSege,ci,cj,flowdir,stream,hillslp,watershed,cHillslp,cWatershed,nodata)
-                break
-                
+            elif downstream_index(flowdir[ci][cj],ci,cj)==(row,col) and stream[ci][cj] == nodata and watershed[ci][cj] == cWatershed:
+                curUpCell.append([ci,cj])
+    if len(curUpCell) == 0:
+        curBoundCells.append([row,col])
+    else:
+        for pt in curUpCell:
+            cRow,cCol = pt
+            UpStreamCell(cRow,cCol,flowdir,stream,watershed,cWatershed,nodata,curBoundCells)
                 
 def UpStreamRoute(WatershedFile,HillslpFile,StreamFile,FlowDirFile,RillExtDir):
     stream = ReadRaster(StreamFile).data
@@ -123,36 +127,46 @@ def UpStreamRoute(WatershedFile,HillslpFile,StreamFile,FlowDirFile,RillExtDir):
         for j in range(ncols):
             if(stream[i][j] != nodata):
                 StreamPts.append((i,j))
-    
+    boundCells = []
     for pt in StreamPts:
-        tempSegements = []
-        cRow,cCol = pt
-        tempSegement = [[cRow,cCol]]
-        for di in [-1,0,1]:
-            for dj in [-1,0,1]:
-                ci = cRow + di
-                cj = cCol + dj
-                if ci < 0 or cj < 0 or ci >= nrows or cj >= ncols:
-                    continue
-                if downstream_index(flowdir[ci][cj],ci,cj)==(cRow,cCol) and stream[ci][cj] == nodata:
-                    curSege = tempSegement
-                    curSege.append([ci,cj])
-                    SingleUpStream(curSege,ci,cj,flowdir,stream,hillslp,watershed,hillslp[ci][cj],watershed[ci][cj],nodata)
-                    tempSegements.append(curSege)
-                    break
-        segement_info.extend(tempSegements)
-    print segement_info
-    for grids in segement_info:
-        for grid in grids:
-            row = grid[0]
-            col = grid[1]
-            grid[0] = geotrans[0] + ( col + 0.5 ) * geotrans[1]
-            grid[1] = geotrans[3] - ( row - 0.5 ) * geotrans[1]
-    segements = []
-    for segement in segement_info:
-        # Create a Polyline object based on the array of points
-        # Append to the list of Polyline objects
-        segements.append(
-            arcpy.Polyline(
-                arcpy.Array([arcpy.Point(*coords) for coords in segement])))
-    arcpy.CopyFeatures_management(segements, UpStreamShp)
+        curBoundCells = []
+        row,col = pt
+        cWatershed = watershed[row][col]
+        UpStreamCell(row,col,flowdir,stream,watershed,cWatershed,nodata,curBoundCells)
+        boundCells.extend(curBoundCells)
+    BoundRaster = numpy.ones((nrows,ncols))
+    BoundRaster = BoundRaster * -9999
+    for cell in boundCells:
+        BoundRaster[cell[0]][cell[1]] = 1
+    WriteAscFile(RillExtDir + os.sep + "BoundCell.asc", BoundRaster,ncols,nrows,geotrans,-9999)
+#        tempSegements = []
+#        cRow,cCol = pt
+#        tempSegement = [[cRow,cCol]]
+#        for di in [-1,0,1]:
+#            for dj in [-1,0,1]:
+#                ci = cRow + di
+#                cj = cCol + dj
+#                if ci < 0 or cj < 0 or ci >= nrows or cj >= ncols:
+#                    continue
+#                if downstream_index(flowdir[ci][cj],ci,cj)==(cRow,cCol) and stream[ci][cj] == nodata:
+#                    curSege = tempSegement
+#                    curSege.append([ci,cj])
+#                    SingleUpStream(curSege,ci,cj,flowdir,stream,hillslp,watershed,hillslp[ci][cj],watershed[ci][cj],nodata)
+#                    tempSegements.append(curSege)
+#                    break
+#        segement_info.extend(tempSegements)
+#    print segement_info
+#    for grids in segement_info:
+#        for grid in grids:
+#            row = grid[0]
+#            col = grid[1]
+#            grid[0] = geotrans[0] + ( col + 0.5 ) * geotrans[1]
+#            grid[1] = geotrans[3] - ( row - 0.5 ) * geotrans[1]
+#    segements = []
+#    for segement in segement_info:
+#        # Create a Polyline object based on the array of points
+#        # Append to the list of Polyline objects
+#        segements.append(
+#            arcpy.Polyline(
+#                arcpy.Array([arcpy.Point(*coords) for coords in segement])))
+#    arcpy.CopyFeatures_management(segements, UpStreamShp)
