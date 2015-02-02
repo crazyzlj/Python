@@ -48,9 +48,11 @@ if __name__ == '__main__':
     RealrillFile1 = RillExtDir + os.sep + "Realrill1.asc"
     RealrillFile2 = RillExtDir + os.sep + "Realrill2.asc"
     RillEdgeFile = RillExtDir + os.sep + "RealEdge.asc"
+    RealRillFinal = RillExtDir + os.sep + "RealRill.asc"
     #Rill.UpStreamRoute(DEMfil,WatershedFile,HillslpFile,StreamFile,FlowDirFile,RillExtDir,UpStreamRouteFile,UpStreamRouteLenFile)
-    Rill.Shoulderpts(UpStreamRouteFile,UpStreamRouteLenFile,DEMfil,SlopeFile,SOSFile,RillExtDir,ShoulderptsFile,RealrillFile1)
+    #Rill.Shoulderpts(UpStreamRouteFile,UpStreamRouteLenFile,DEMfil,SlopeFile,SOSFile,RillExtDir,ShoulderptsFile,RealrillFile1)
     #Rill.IdentifyRillRidges(HillslpFile,StreamFile,FlowDirFile,FlowAccFile,WatershedFile,DEMfil,RealrillFile2,RillEdgeFile)
+    Rill.RelinkRealRill(RealrillFile1,RealrillFile2,StreamFile,FlowDirFile,RealRillFinal)
     
     #alpha = 25
     #beta = 5

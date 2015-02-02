@@ -170,6 +170,25 @@ def RemoveLessPts(RasterFile,num,OutputRaster):
             else:
                 raster[i][j] = 1
     WriteAscFile(OutputRaster,raster,ncols,nrows,geotrans,nodata)
+def RemoveLessPtsMtx(raster,nodata,num):
+    nrows,ncols = raster.shape
+    for i in range(nrows):
+        for j in range(ncols):
+            if raster[i][j] ==1:
+                tempIdx = []
+                ContinuousGRID(raster,i,j,tempIdx)
+                tempIdx = list(set(tempIdx))
+                count = tempIdx.__len__()
+                for rc in tempIdx:
+                    raster[rc[0]][rc[1]] = count
+    for i in range(nrows):
+        for j in range(ncols):
+            if raster[i][j] <= int(num):
+                raster[i][j] = nodata
+            else:
+                raster[i][j] = 1
+    return raster
+
 def GRID2ASC(GRID,ASC):
     grid = ReadRaster(GRID).data
     nodata = ReadRaster(GRID).noDataValue

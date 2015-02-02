@@ -272,4 +272,35 @@ def Shoulderpts(UpStreamRouteFile,UpStreamRouteLenFile,DEMfil,SlopeFile,SOSFile,
     WriteAscFile(RealrillFile, RealRill,ncols,nrows,geotrans,-9999)
     WriteAscFile(ShoulderptsFile, shoulderpts,ncols,nrows,geotrans,-9999)
     
-    
+def RelinkRealRill(RealrillFile1,RealrillFile2,StreamFile,FlowDirFile,RealRillFinal):
+    rill1 = ReadRaster(RealrillFile1).data
+    rill2 = ReadRaster(RealrillFile2).data
+    stream = ReadRaster(StreamFile).data
+    flowdir = ReadRaster(FlowDirFile).data
+    nrows,ncols = stream.shape
+    nodata = ReadRaster(StreamFile).noDataValue
+    geotrans = ReadRaster(StreamFile).geotrans
+    tempRill = numpy.ones((nrows,ncols))
+    tempRill = tempRill * -9999
+    for i in range(1,nrows - 1):
+        for j in range(1,ncols - 1):
+            if rill1[i][j] == 1 or rill2[i][j] == 1:
+                tempRill[i][j] = 1
+    RemoveLessPtsMtx(tempRill,-9999,2)
+    RealRill = numpy.copy(tempRill)
+    for i in range(1,nrows - 1):
+        for j in range(1,ncols - 1):
+            if tempRill[i][j] == 1:
+                count = 0
+                while count <= 5:
+                    crow, ccol = downstream_index(flowdir[i][j],i,j)
+                    if not (crow < 1 or crow >= nrows - 2 or ccol < 1 or ccol >= ncols - 2):
+                        if tempRill[crow][ccol] != 1:
+                            RealRill[crow][ccol] = 1
+                            i,j = crow,ccol
+                            count = count + 1
+                        else:
+                            break
+                    else:
+                        break
+    WriteAscFile(RealRillFinal, RealRill,ncols,nrows,geotrans,-9999)
