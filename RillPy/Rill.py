@@ -2,8 +2,8 @@
 #coding=utf-8
 from Util import *
 from Hillslope import *
-
-def IdentifyRillRidges(HillslpFile,StreamFile,FlowDirFile,FlowAccFile,WatershedFile,DEMfil,folder):
+import math,copy
+def IdentifyRillRidges(HillslpFile,StreamFile,FlowDirFile,FlowAccFile,WatershedFile,DEMfil,RealRillFile,RillEdgeFile):
 #    header = "RillID,NodeID,DEM_R,DEM_L,CurvProf_R,CurvProf_L,CurvPlan_R,CurvPlan_L"
 #    f = open(ProfileStats, 'w')
 #    f.write(header)
@@ -70,7 +70,8 @@ def IdentifyRillRidges(HillslpFile,StreamFile,FlowDirFile,FlowAccFile,WatershedF
                 DEMProf = list(reversed(DEMR)) + DEML[1:]
             if DEMProf != []:
                 RillProfInfo.append([RillId,NodeId,DEMProf])
-                RealRill[row][col] = RillId
+                RealRill[row][col] = 1
+                #RealRill[row][col] = RillId
                 RillEdge[row][col] = RillId
                 RillEdge[temprowR - deltaR[0]][tempcolR - deltaR[1]] = RillId
                 RillEdge[temprowL - deltaL[0]][tempcolL - deltaL[1]] = RillId
@@ -87,8 +88,8 @@ def IdentifyRillRidges(HillslpFile,StreamFile,FlowDirFile,FlowAccFile,WatershedF
     AccumAll.sort()
     #print Accum
     #print AccumAll
-    WriteAscFile(folder + os.sep + "RealRill.asc", RealRill,ncols,nrows,geotrans,-9999)
-    WriteAscFile(folder + os.sep + "RillEdge.asc", RillEdge,ncols,nrows,geotrans,-9999)
+    WriteAscFile(RealRillFile, RealRill,ncols,nrows,geotrans,-9999)
+    WriteAscFile(RillEdgeFile, RillEdge,ncols,nrows,geotrans,-9999)
 def UpStreamCell(row,col,flowdir,stream,watershed,cWatershed,nodata,curBoundCells):
     nrows,ncols = flowdir.shape
     curUpCell = []
@@ -114,7 +115,7 @@ def SingleDownstream(cell,flowdir,stream,nodata):
         crow,ccol = downstream_index(flowdir[crow][ccol],crow,ccol)
         curDownStream.append([crow,ccol])
     return curDownStream
-def UpStreamRoute(DEMfil,WatershedFile,HillslpFile,StreamFile,FlowDirFile,RillExtDir,UpStreamRouteFile):
+def UpStreamRoute(DEMfil,WatershedFile,HillslpFile,StreamFile,FlowDirFile,RillExtDir,UpStreamRouteFile,UpStreamRouteLenFile):
     stream = ReadRaster(StreamFile).data
     nrows,ncols = stream.shape
     nodata = ReadRaster(StreamFile).noDataValue
@@ -142,46 +143,56 @@ def UpStreamRoute(DEMfil,WatershedFile,HillslpFile,StreamFile,FlowDirFile,RillEx
     BoundRaster = numpy.ones((nrows,ncols))
     BoundRaster = BoundRaster * -9999
     segement_info = []
+    segeLength_info = []
     # A list that will hold each of the Polyline objects
     for cell in boundCells:
         BoundRaster[cell[0]][cell[1]] = 1
-        segement_info.append(SingleDownstream(cell,flowdir,stream,nodata))
+        curSege = SingleDownstream(cell,flowdir,stream,nodata)
+        curSegeLen = []
+        curSegeLen.append(1)
+        for i in range(1,len(curSege)):
+            if flowdir[curSege[i][0]][curSege[i][1]] in [2,8,32,128]:
+                curSegeLen.append(curSegeLen[i-1] + math.sqrt(2))
+            else:
+                curSegeLen.append(curSegeLen[i-1] + 1)
+        segeLength_info.append(curSegeLen)
+        segement_info.append(curSege)
     #print segement_info
     WriteAscFile(RillExtDir + os.sep + "BoundCell.asc", BoundRaster,ncols,nrows,geotrans,-9999)
     f = open(UpStreamRouteFile,'w')
     f.write(str(segement_info))
     f.close()
-#    arcpy.gp.overwriteOutput = 1
-#    for grids in segement_info:
-#        for grid in grids:
-#            row = grid[0]
-#            col = grid[1]
-#            grid[0] = geotrans[0] + ( col + 0.5 ) * geotrans[1]
-#            grid[1] = geotrans[3] - ( row + 0.5 ) * geotrans[1]
-#    segements = []
-#    for segement in segement_info:
-#        # Create a Polyline object based on the array of points
-#        # Append to the list of Polyline objects
-#        segements.append(
-#            arcpy.Polyline(
-#                arcpy.Array([arcpy.Point(*coords) for coords in segement])))
-#    arcpy.CopyFeatures_management(segements, UpStreamShp)
-#    RouteElev = []
-#    for grids in segement_info:
-#        curRouteElev = []
-#        for grid in grids:
-#            ci,cj = grid
-#            curRouteElev.append(demfil[ci][cj])
-#        RouteElev.append(curRouteElev)
-#    ElevFile = RillExtDir + os.sep + "RouteElevs.txt"
-#    f = open(ElevFile,'w')
-#    for elev in RouteElev:
-#        f.write(str(elev))
-#    f.close()
-def Shoulderpts(UpStreamRouteFile,SOSFile,RillExtDir,ShoulderptsFile):
+    f = open(UpStreamRouteLenFile,'w')
+    f.write(str(segeLength_info))
+    f.close()
+    
+    arcpy.gp.overwriteOutput = 1
+    for grids in segement_info:
+        for grid in grids:
+            row = grid[0]
+            col = grid[1]
+            grid[0] = geotrans[0] + ( col + 0.5 ) * geotrans[1]
+            grid[1] = geotrans[3] - ( row + 0.5 ) * geotrans[1]
+    segements = []
+    for segement in segement_info:
+        # Create a Polyline object based on the array of points
+        # Append to the list of Polyline objects
+        segements.append(
+            arcpy.Polyline(
+                arcpy.Array([arcpy.Point(*coords) for coords in segement])))
+    arcpy.CopyFeatures_management(segements, UpStreamShp)
+
+
+def Shoulderpts(UpStreamRouteFile,UpStreamRouteLenFile,DEMfil,SlopeFile,SOSFile,RillExtDir,ShoulderptsFile,RealrillFile):
     f = open(UpStreamRouteFile,'r')
     segement_info = eval(f.readline())
     f.close()
+    f = open(UpStreamRouteLenFile,'r')
+    segementLen_info = eval(f.readline())
+    f.close()
+    
+    dem = ReadRaster(DEMfil).data
+    slope = ReadRaster(SlopeFile).data
     sos = ReadRaster(SOSFile).data
     nrows,ncols = sos.shape
     nodata = ReadRaster(SOSFile).noDataValue
@@ -189,20 +200,76 @@ def Shoulderpts(UpStreamRouteFile,SOSFile,RillExtDir,ShoulderptsFile):
     
     shoulderpts = numpy.ones((nrows,ncols))
     shoulderpts = shoulderpts * -9999
+    RealRill = numpy.ones((nrows,ncols))
+    RealRill = RealRill * -9999
+    
     RouteSOS = []
+    RouteElev = []
+    RouteSlp = []
     for grids in segement_info:
+        curRouteElev = []
+        curRouteSlp = []
         curRouteSOS = []
         for grid in grids:
             ci,cj = grid
+            curRouteElev.append(dem[ci][cj])
+            curRouteSlp.append(slope[ci][cj])
             curRouteSOS.append(sos[ci][cj])
-        RouteSOS.append(curRouteSOS)
-    SOSRoute = RillExtDir + os.sep + "SOSRoute.txt"
-    f = open(SOSRoute,'w')
-    for sos in RouteSOS:
-        f.write(str(sos))
-    f.close()
+        if len(curRouteElev) >= 2 and max(curRouteElev) - min(curRouteElev) >= 10:
+            MaxSOSIdx = curRouteSOS.index(max(curRouteSOS))
+            tempSOS = copy.copy(curRouteSOS)
+            tempSOS.sort()
+            SecSOSIdx = curRouteSOS.index(tempSOS[len(tempSOS)-2])
+            if len(curRouteElev) > 3:
+                if MaxSOSIdx in range(len(curRouteElev)-3,len(curRouteElev)):
+                    MaxSOSIdx = curRouteSOS.index(tempSOS[len(tempSOS)-3])
+                    SecSOSIdx = curRouteSOS.index(tempSOS[len(tempSOS)-2])
+                    
+            lowerMaxSOS = curRouteSOS[MaxSOSIdx] * 0.85 #- 0.05 * (max(curRouteSOS) - min(curRouteSOS))
+            MaxSlpIdx = curRouteSlp.index(max(curRouteSlp))
+            EdgeIdx = 9999
+            if MaxSlpIdx >= min(MaxSOSIdx,SecSOSIdx) and MaxSlpIdx <= max(MaxSOSIdx,SecSOSIdx):
+                for i in range(min(MaxSOSIdx,SecSOSIdx)+1): #,max(MaxSOSIdx,SecSOSIdx)):
+                    if curRouteSlp[i] >= 20:
+                        EdgeIdx = i
+                        break
+            for i in range(len(grids)):
+                if curRouteSOS[i] >= lowerMaxSOS and curRouteSlp[i] >= 20:
+                    if EdgeIdx != 9999:
+                        EdgeIdx = min(EdgeIdx, i)
+                        break
+                    else:
+                        EdgeIdx = i
+                        break
+            if EdgeIdx != 9999:
+                crow,ccol = grids[EdgeIdx]
+                shoulderpts[crow][ccol] = 1
+                Srow,Scol = grids[len(grids)-1]
+                RealRill[Srow][Scol] = 1
+
+                    
+#            RouteElev.append(curRouteElev)
+#            RouteSlp.append(curRouteSlp)
+#            RouteSOS.append(curRouteSOS)
+            
+#    SOSRoute = RillExtDir + os.sep + "RouteSOS.txt"
+#    SlpRoute = RillExtDir + os.sep + "RouteSlp.txt"
+#    ElevRoute = RillExtDir + os.sep + "RouteElev.txt"
+#    f = open(SOSRoute,'w')
+#    for sos in RouteSOS:
+#        f.write(str(sos))
+#    f.close()
+#    f = open(SlpRoute,'w')
+#    for slp in RouteSlp:
+#        f.write(str(slp))
+#    f.close()
+#    f = open(ElevRoute,'w')
+#    for elev in RouteElev:
+#        f.write(str(elev))
+#    f.close()
     
     
+    WriteAscFile(RealrillFile, RealRill,ncols,nrows,geotrans,-9999)
     WriteAscFile(ShoulderptsFile, shoulderpts,ncols,nrows,geotrans,-9999)
     
     

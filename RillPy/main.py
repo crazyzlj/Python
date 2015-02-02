@@ -43,10 +43,14 @@ if __name__ == '__main__':
     FlowDirFile = PreprocessDir + os.sep + "flowdir"
     FlowAccFile = PreprocessDir + os.sep + "flowacc"
     UpStreamRouteFile = RillExtDir + os.sep + "UpstreamRoute.txt"
+    UpStreamRouteLenFile = RillExtDir + os.sep + "UpstreamRouteLen.txt"
     ShoulderptsFile = RillExtDir + os.sep + "Shoulderpts.asc"
-    Rill.UpStreamRoute(DEMfil,WatershedFile,HillslpFile,StreamFile,FlowDirFile,RillExtDir,UpStreamRouteFile)
-    Rill.Shoulderpts(UpStreamRouteFile,SOSFile,RillExtDir,ShoulderptsFile)
-    #Rill.IdentifyRillRidges(HillslpFile,StreamFile,FlowDirFile,FlowAccFile,WatershedFile,DEMfil,RillExtDir)
+    RealrillFile1 = RillExtDir + os.sep + "Realrill1.asc"
+    RealrillFile2 = RillExtDir + os.sep + "Realrill2.asc"
+    RillEdgeFile = RillExtDir + os.sep + "RealEdge.asc"
+    #Rill.UpStreamRoute(DEMfil,WatershedFile,HillslpFile,StreamFile,FlowDirFile,RillExtDir,UpStreamRouteFile,UpStreamRouteLenFile)
+    Rill.Shoulderpts(UpStreamRouteFile,UpStreamRouteLenFile,DEMfil,SlopeFile,SOSFile,RillExtDir,ShoulderptsFile,RealrillFile1)
+    #Rill.IdentifyRillRidges(HillslpFile,StreamFile,FlowDirFile,FlowAccFile,WatershedFile,DEMfil,RealrillFile2,RillEdgeFile)
     
     #alpha = 25
     #beta = 5
