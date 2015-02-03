@@ -58,16 +58,23 @@ if __name__ == '__main__':
     ShoulderptsFinalFile = RillExtDir + os.sep + "ShoulderptsFinal.asc"
     RealrillFile1Final = RillExtDir + os.sep + "Realrill1final.asc"
     ShoulderptsFinalEli = RillExtDir + os.sep + "ShoulderptsFinalEli.asc"
-    #Rill.UpStreamRoute(DEMfil,WatershedFile,HillslpFile,StreamFile,FlowDirFile,RillExtDir,UpStreamRouteFile,UpStreamRouteShp)
-    #Rill.Shoulderpts(UpStreamRouteFile,DEMfil,SlopeFile,SOSFile,RillExtDir,ShoulderptsFile,RealrillFile1)
+    BndCellFile = RillExtDir + os.sep + "BoundCell.asc"
+    BndPtsIdxFile = RillExtDir + os.sep + "BndPtsIdx.txt"
+    SnakeICCFile = RillExtDir + os.sep + "SnakeICC.asc"
+
+    #Rill.UpStreamRoute(DEMfil,WatershedFile,HillslpFile,StreamFile,FlowDirFile,RillExtDir,BndCellFile,UpStreamRouteFile,UpStreamRouteShp)
+    #Rill.Shoulderpts(UpStreamRouteFile,DEMfil,SlopeFile,SOSFile,RillExtDir,BndCellFile,ShoulderptsFile,RealrillFile1)
     #Rill.IdentifyRillRidges(HillslpFile,StreamFile,FlowDirFile,FlowAccFile,WatershedFile,DEMfil,RealrillFile2,RillEdgeFile)
     #Rill.RelinkRealRill(RealrillFile1,RealrillFile2,StreamFile,FlowDirFile,RealRillFinal)
     #Rill.SimplifyByRillOrder(RealRillFinal,FlowDirFile,tempDir,5,RillStFile,OrderStFile)
     #Subbasin.GenerateWatershedByStream(RillStFile,FlowDirFile, tempDir, FinalWtdFile)
     #Hillslope.DelineateHillslopes(RillStFile,FlowDirFile,HillslpFinalFile)
-    #Rill.UpStreamRoute(DEMfil,FinalWtdFile,HillslpFinalFile,RillStFile,FlowDirFile,RillExtDir,UpStreamRouteFinalFile,UpStreamRouteFinalShp)
-    #Rill.Shoulderpts(UpStreamRouteFinalFile,DEMfil,SlopeFile,SOSFile,RillExtDir,ShoulderptsFinalFile,RealrillFile1Final)
-    Util.RemoveLessPts(ShoulderptsFinalFile,5,ShoulderptsFinalEli)
+    #Rill.UpStreamRoute(DEMfil,FinalWtdFile,HillslpFinalFile,RillStFile,FlowDirFile,RillExtDir,BndCellFile,UpStreamRouteFinalFile,UpStreamRouteFinalShp)
+    #Rill.Shoulderpts(UpStreamRouteFinalFile,DEMfil,SlopeFile,SOSFile,RillExtDir,BndPtsIdxFile,ShoulderptsFinalFile,RealrillFile1Final)
+    #Util.RemoveLessPts(ShoulderptsFinalFile,5,ShoulderptsFinalEli)
+    
+    
+    ShoulderLine.SnakeICC(RealrillFile1Final,49,BndPtsIdxFile,BndCellFile,SnakeICCFile)
        
     ## Snake model to generate continuous shoulder lines
     #alpha = 25

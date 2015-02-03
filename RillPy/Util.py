@@ -144,8 +144,8 @@ def ContinuousGRID(raster,i,j,idx):
         for dj in [-1,0,1]:
             if i+di >= 0 and i+di < nrows and j+dj >= 0 and j+dj < ncols:
                 if raster[i+di][j+dj] == value and not(di == dj and di == 0):
-                    if not idx.__contains__((i+di,j+dj)):
-                        idx.append((i+di,j+dj))
+                    if not [i+di,j+dj] in idx:
+                        idx.append([i+di,j+dj])
                         ContinuousGRID(raster,i+di,j+dj,idx)
     #idx = list(set(idx))
     #return idx
@@ -155,6 +155,7 @@ def RemoveLessPts(RasterFile,num,OutputRaster):
     nrows,ncols = raster.shape
     nodata = ReadRaster(RasterFile).noDataValue
     geotrans = ReadRaster(RasterFile).geotrans
+    
     for i in range(nrows):
         for j in range(ncols):
             if raster[i][j] ==1:
@@ -173,22 +174,25 @@ def RemoveLessPts(RasterFile,num,OutputRaster):
     WriteAscFile(OutputRaster,raster,ncols,nrows,geotrans,nodata)
 def RemoveLessPtsMtx(raster,nodata,num):
     nrows,ncols = raster.shape
+    DelIdx = []
     for i in range(nrows):
         for j in range(ncols):
             if raster[i][j] ==1:
                 tempIdx = []
                 ContinuousGRID(raster,i,j,tempIdx)
                 tempIdx = list(set(tempIdx))
-                count = tempIdx.__len__()
+                count = len(tempIdx)
                 for rc in tempIdx:
                     raster[rc[0]][rc[1]] = count
     for i in range(nrows):
         for j in range(ncols):
-            if raster[i][j] <= int(num):
-                raster[i][j] = nodata
-            else:
-                raster[i][j] = 1
-    return raster
+            if raster[i][j] != nodata:
+                if raster[i][j] <= int(num):
+                    raster[i][j] = nodata
+                    DelIdx.append([i,j])
+                else:
+                    raster[i][j] = 1
+    return (DelIdx,raster)
 
 def GRID2ASC(GRID,ASC):
     grid = ReadRaster(GRID).data
@@ -216,6 +220,60 @@ def GetUniqueValues(RasterFile):
                     value.append(raster[i][j])
     value = list(set(value))
     return value
+
+def isEdge(raster,row,col,nodata):
+    nrows,ncols = raster.shape
+    if (row == 0 or row == nrows-1 or col == 0 or col == ncols-1) and raster[row][col] != nodata:
+        return True
+    elif raster[row][col] == nodata:
+        return False
+    else:
+        count = 0
+        for di in [-1,0,1]:
+            for dj in [-1,0,1]:
+                ni = row + di
+                nj = col + dj
+                if raster[ni][nj] == nodata:
+                    count = count + 1
+        if count > 0:
+            return True
+        else:
+            return False
+
+def ExtractBoundary(raster,nodata):
+    nrows,ncols = raster.shape
+    Boundary = numpy.ones((nrows,ncols))
+    Boundary = Boundary * -9999
+    for i in range(nrows):
+        for j in range(ncols):
+            if isEdge(raster,i,j,nodata):
+                Boundary[i][j] = 1
+#    for i in range(nrows):
+#        for j in range(ncols):
+#            if raster[i][j] != nodata:
+#                tempIdx = []
+#                ContinuousGRID(raster,i,j,tempIdx)
+#                tempIdx = list(set(tempIdx))
+#                count = len(tempIdx)
+#                for rc in tempIdx:
+#                    raster[rc[0]][rc[1]] = count
+#    unique = numpy.unique(raster)
+#    unique.sort()
+#    print unique
+    return Boundary
+
+def InterpLine(Srow,Scol,Erow,Ecol):
+    Idxs = []
+    if Scol != Ecol:
+        Sc = max(Scol,Ecol)
+        Ec = min(Scol,Ecol)
+        
+    else:
+        Sr = max(Srow,Erow)
+        Er = min(Srow,Erow)
+        for i in range(Sr,Er):
+            Idxs.append([Sr + i + 1,Scol])
+    return Idxs
 ##  End Utility Functions ##
 
 ## DEM Preprocessing  ##

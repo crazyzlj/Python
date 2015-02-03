@@ -91,3 +91,30 @@ for line in open(r'e:\test.txt'):
     s = eval(line)
     print len(s)
 print count
+
+
+#    annotation from Rill.Shoulderpts
+#    f = open(UpStreamRouteFile,'r')
+#    segement_info = eval(f.readline())
+#    f.close()
+#    f = open(UpStreamRouteLenFile,'r')
+#    segementLen_info = eval(f.readline())
+#    f.close()
+#            RouteElev.append(curRouteElev)
+#            RouteSlp.append(curRouteSlp)
+#            RouteSOS.append(curRouteSOS)
+#    SOSRoute = RillExtDir + os.sep + "RouteSOS.txt"
+#    SlpRoute = RillExtDir + os.sep + "RouteSlp.txt"
+#    ElevRoute = RillExtDir + os.sep + "RouteElev.txt"
+#    f = open(SOSRoute,'w')
+#    for sos in RouteSOS:
+#        f.write(str(sos))
+#    f.close()
+#    f = open(SlpRoute,'w')
+#    for slp in RouteSlp:
+#        f.write(str(slp))
+#    f.close()
+#    f = open(ElevRoute,'w')
+#    for elev in RouteElev:
+#        f.write(str(elev))
+#    f.close()

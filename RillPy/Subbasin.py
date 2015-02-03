@@ -64,24 +64,7 @@ def GenerateWatershedByStream(StreamFile,FlowDirFile, tempDir, WatershedFile):
     Watershed.save(tempWtshd)
     GRID2ASC(tempWtshd,WatershedFile)
     
-def isEdge(raster,row,col,nodata):
-    nrows,ncols = raster.shape
-    if (row == 0 or row == nrows-1 or col == 0 or col == ncols-1) and raster[row][col] != nodata:
-        return True
-    elif raster[row][col] == nodata:
-        return False
-    else:
-        count = 0
-        for di in [-1,0,1]:
-            for dj in [-1,0,1]:
-                ni = row + di
-                nj = col + dj
-                if raster[ni][nj] == nodata:
-                    count = count + 1
-        if count > 0:
-            return True
-        else:
-            return False
+
     
 def ExtractBasinBoundary(Basin,basinID,BasinBoundary):
     basin = ReadRaster(Basin).data

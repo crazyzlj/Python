@@ -119,5 +119,39 @@ def RillShoulder(BasinFile,FlowDir,ShoulderPts,tempDir,ShoulderFile):
         ExtractBasinBoundary(BasinFile,tempBsnID,BsnASC)
         ShldASC = tempDir + os.sep + "Shld" + str(BsnID) + ".asc"
         RillShoulderSegement(BsnASC,FlowDir,ShoulderPts,ShldASC)
+def Rectangle(row,col,side):
+    GridIdxs = []
+    if side/2 >= 1:
+        for crow in range(row - side/2, row + side/2 + 1):
+            for ccol in range(col - side/2, col + side/2 + 1):
+                GridIdxs.append([crow,ccol])
+    else:
+        GridIdxs.append([row,col])
+    return GridIdxs
+
+def SnakeICC(RealrillFile1Final,side,BndPtsIdxFile,BndCellFile,SnakeICCFile):
+    bndcells = ReadRaster(BndCellFile).data
+    rillcells = ReadRaster(RealrillFile1Final).data
+    nrows,ncols = bndcells.shape
+    nodata = ReadRaster(BndCellFile).noDataValue
+    geotrans = ReadRaster(BndCellFile).geotrans
     
-    
+    snakeicc = numpy.ones((nrows,ncols))
+    snakeicc = snakeicc * -9999
+#    for line in open(BndPtsIdxFile):
+#        bnds = eval(line)
+#        uniBnd = bnds[0]
+#        for bnd in bnds:
+#            if bnd[0] <= uniBnd[0] and bnd[1] <= uniBnd[1]:
+#                uniBnd = bnd                
+#        snakeicc[uniBnd[0]][uniBnd[1]] = 1
+    for i in range(nrows):
+        for j in range(ncols):
+            if rillcells[i][j] != nodata:
+                Idxs = Rectangle(i,j,side)
+                for idx in Idxs:
+                    crow,ccol = idx
+                    if not(crow < 0 or crow >= nrows or ccol < 0 or ccol >= ncols ):
+                        snakeicc[crow][ccol] = 1
+    snakeicc = ExtractBoundary(snakeicc,nodata)
+    WriteAscFile(SnakeICCFile, snakeicc,ncols,nrows,geotrans,-9999) 

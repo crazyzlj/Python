@@ -116,7 +116,7 @@ def SingleDownstream(cell,flowdir,stream,nodata):
         crow,ccol = downstream_index(flowdir[crow][ccol],crow,ccol)
         curDownStream.append([crow,ccol])
     return curDownStream
-def UpStreamRoute(DEMfil,WatershedFile,HillslpFile,StreamFile,FlowDirFile,RillExtDir,UpStreamRouteFile,UpStreamShp):
+def UpStreamRoute(DEMfil,WatershedFile,HillslpFile,StreamFile,FlowDirFile,RillExtDir,BndCellFile,UpStreamRouteFile,UpStreamShp):
     stream = ReadRaster(StreamFile).data
     nrows,ncols = stream.shape
     nodata = ReadRaster(StreamFile).noDataValue
@@ -170,19 +170,12 @@ def UpStreamRoute(DEMfil,WatershedFile,HillslpFile,StreamFile,FlowDirFile,RillEx
             grid[1] = geotrans[3] - ( row + 0.5 ) * geotrans[1]
         segements.append(arcpy.Polyline(arcpy.Array([arcpy.Point(*coords) for coords in curSege])))
         
-    WriteAscFile(RillExtDir + os.sep + "BoundCell.asc", BoundRaster,ncols,nrows,geotrans,-9999)   
+    WriteAscFile(BndCellFile, BoundRaster,ncols,nrows,geotrans,-9999)   
     f.close()        
     arcpy.CopyFeatures_management(segements, UpStreamShp)
 
 
-def Shoulderpts(UpStreamRouteFile,DEMfil,SlopeFile,SOSFile,RillExtDir,ShoulderptsFile,RealrillFile):
-#    f = open(UpStreamRouteFile,'r')
-#    segement_info = eval(f.readline())
-#    f.close()
-#    f = open(UpStreamRouteLenFile,'r')
-#    segementLen_info = eval(f.readline())
-#    f.close()
-
+def Shoulderpts(UpStreamRouteFile,DEMfil,SlopeFile,SOSFile,RillExtDir,SelBndCellFile,ShoulderptsFile,RealrillFile):
     dem = ReadRaster(DEMfil).data
     slope = ReadRaster(SlopeFile).data
     sos = ReadRaster(SOSFile).data
@@ -198,9 +191,10 @@ def Shoulderpts(UpStreamRouteFile,DEMfil,SlopeFile,SOSFile,RillExtDir,Shoulderpt
     RouteSOS = []
     RouteElev = []
     RouteSlp = []
+    ShdPtsIdx = []  # Store the unique shoulder points' index
+    BndPtsIdx = []  # Store the corresponding bound cells' index
     for segement in open(UpStreamRouteFile):
         grids = eval(segement)
-    #for grids in segement_info:
         curRouteElev = []
         curRouteSlp = []
         curRouteSOS = []
@@ -224,11 +218,11 @@ def Shoulderpts(UpStreamRouteFile,DEMfil,SlopeFile,SOSFile,RillExtDir,Shoulderpt
             EdgeIdx = 9999
             if MaxSlpIdx >= min(MaxSOSIdx,SecSOSIdx) and MaxSlpIdx <= max(MaxSOSIdx,SecSOSIdx):
                 for i in range(min(MaxSOSIdx,SecSOSIdx)+1): #,max(MaxSOSIdx,SecSOSIdx)):
-                    if curRouteSlp[i] >= 20:
+                    if curRouteSlp[i] >= 25:
                         EdgeIdx = i
                         break
             for i in range(len(grids)):
-                if curRouteSOS[i] >= lowerMaxSOS and curRouteSlp[i] >= 20:
+                if curRouteSOS[i] >= lowerMaxSOS and curRouteSlp[i] >= 25:
                     if EdgeIdx != 9999:
                         EdgeIdx = min(EdgeIdx, i)
                         break
@@ -240,31 +234,32 @@ def Shoulderpts(UpStreamRouteFile,DEMfil,SlopeFile,SOSFile,RillExtDir,Shoulderpt
                 shoulderpts[crow][ccol] = 1
                 Srow,Scol = grids[len(grids)-1]
                 RealRill[Srow][Scol] = 1
-
-                    
-#            RouteElev.append(curRouteElev)
-#            RouteSlp.append(curRouteSlp)
-#            RouteSOS.append(curRouteSOS)
-            
-#    SOSRoute = RillExtDir + os.sep + "RouteSOS.txt"
-#    SlpRoute = RillExtDir + os.sep + "RouteSlp.txt"
-#    ElevRoute = RillExtDir + os.sep + "RouteElev.txt"
-#    f = open(SOSRoute,'w')
-#    for sos in RouteSOS:
-#        f.write(str(sos))
-#    f.close()
-#    f = open(SlpRoute,'w')
-#    for slp in RouteSlp:
-#        f.write(str(slp))
-#    f.close()
-#    f = open(ElevRoute,'w')
-#    for elev in RouteElev:
-#        f.write(str(elev))
-#    f.close()
-    
-    
+                ## save information of shoulder point's corresponding bound cell
+                brow,bcol = grids[0]
+                if not ([crow,ccol] in ShdPtsIdx):
+                    ShdPtsIdx.append([crow,ccol])
+                    BndPtsIdx.append([[brow,bcol]])
+                else:
+                    BndPtsIdx[ShdPtsIdx.index([crow,ccol])].append([brow,bcol])
+    #print len(ShdPtsIdx),len(BndPtsIdx)
+    DelIdx,shoulderpts = RemoveLessPtsMtx(shoulderpts,-9999,2)
+    print len(DelIdx)
+    for idx in DelIdx:
+        if idx in ShdPtsIdx:
+            BndPtsIdx.remove(BndPtsIdx[ShdPtsIdx.index(idx)])
+            ShdPtsIdx.remove(idx)        
+    fShd = open(RillExtDir + os.sep + "ShdPtsIdx.txt",'w')
+    fBnd = open(SelBndCellFile,'w')
+    for i in range(len(ShdPtsIdx)):
+        fShd.write(str(ShdPtsIdx[i]))
+        fShd.write('\n')
+        fBnd.write(str(BndPtsIdx[i]))
+        fBnd.write('\n')
+    fShd.close()
+    fBnd.close()
     WriteAscFile(RealrillFile, RealRill,ncols,nrows,geotrans,-9999)
     WriteAscFile(ShoulderptsFile, shoulderpts,ncols,nrows,geotrans,-9999)
+    
 def RelinkByNUM(flowdir,tempRill,num):
     nrows,ncols = flowdir.shape
     RealRill = numpy.copy(tempRill)
@@ -301,13 +296,12 @@ def RelinkRealRill(RealrillFile1,RealrillFile2,StreamFile,FlowDirFile,RealRillFi
         for j in range(1,ncols - 1):
             if rill1[i][j] == 1 or rill2[i][j] == 1:
                 tempRill[i][j] = 1
-    tempRill = RemoveLessPtsMtx(tempRill,-9999,5)
+    DelIdx,tempRill = RemoveLessPtsMtx(tempRill,-9999,5)
     RealRill = RelinkByNUM(flowdir,tempRill,5)
-    RealRill = RemoveLessPtsMtx(RealRill,-9999,5)
+    DelIdx,RealRill = RemoveLessPtsMtx(RealRill,-9999,5)
     RealRill = RelinkByNUM(flowdir,tempRill,20)
     WriteAscFile(RealRillFinal, RealRill,ncols,nrows,geotrans,-9999)
 def SimplifyByRillOrder(RealRillFile,FlowDirFile,tempDir,num,RillStFile,OrderStFile):
-    
     ## delete some first-order rill by length threshold
     changed = Delete1stOrderByTHR(RealRillFile,FlowDirFile,tempDir,num,RillStFile)
     while changed != 0:
