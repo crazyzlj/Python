@@ -57,6 +57,7 @@ if __name__ == '__main__':
     UpStreamRouteFinalShp = RillExtDir + os.sep + "UpstreamRouteFinal.shp"
     ShoulderptsFinalFile = RillExtDir + os.sep + "ShoulderptsFinal.asc"
     RealrillFile1Final = RillExtDir + os.sep + "Realrill1final.asc"
+    ShoulderptsFinalEli = RillExtDir + os.sep + "ShoulderptsFinalEli.asc"
     #Rill.UpStreamRoute(DEMfil,WatershedFile,HillslpFile,StreamFile,FlowDirFile,RillExtDir,UpStreamRouteFile,UpStreamRouteShp)
     #Rill.Shoulderpts(UpStreamRouteFile,DEMfil,SlopeFile,SOSFile,RillExtDir,ShoulderptsFile,RealrillFile1)
     #Rill.IdentifyRillRidges(HillslpFile,StreamFile,FlowDirFile,FlowAccFile,WatershedFile,DEMfil,RealrillFile2,RillEdgeFile)
@@ -65,9 +66,10 @@ if __name__ == '__main__':
     #Subbasin.GenerateWatershedByStream(RillStFile,FlowDirFile, tempDir, FinalWtdFile)
     #Hillslope.DelineateHillslopes(RillStFile,FlowDirFile,HillslpFinalFile)
     #Rill.UpStreamRoute(DEMfil,FinalWtdFile,HillslpFinalFile,RillStFile,FlowDirFile,RillExtDir,UpStreamRouteFinalFile,UpStreamRouteFinalShp)
-    Rill.Shoulderpts(UpStreamRouteFinalFile,DEMfil,SlopeFile,SOSFile,RillExtDir,ShoulderptsFinalFile,RealrillFile1Final)
+    #Rill.Shoulderpts(UpStreamRouteFinalFile,DEMfil,SlopeFile,SOSFile,RillExtDir,ShoulderptsFinalFile,RealrillFile1Final)
+    Util.RemoveLessPts(ShoulderptsFinalFile,5,ShoulderptsFinalEli)
        
-    
+    ## Snake model to generate continuous shoulder lines
     #alpha = 25
     #beta = 5
     #ShoulderPtsOrig = RillExtDir + os.sep + "ShoulderPtsOrig.asc"
