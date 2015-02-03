@@ -3,6 +3,7 @@
 from Util import *
 from Hillslope import *
 import math,copy
+import arcpy
 def IdentifyRillRidges(HillslpFile,StreamFile,FlowDirFile,FlowAccFile,WatershedFile,DEMfil,RealRillFile,RillEdgeFile):
 #    header = "RillID,NodeID,DEM_R,DEM_L,CurvProf_R,CurvProf_L,CurvPlan_R,CurvPlan_L"
 #    f = open(ProfileStats, 'w')
@@ -115,7 +116,7 @@ def SingleDownstream(cell,flowdir,stream,nodata):
         crow,ccol = downstream_index(flowdir[crow][ccol],crow,ccol)
         curDownStream.append([crow,ccol])
     return curDownStream
-def UpStreamRoute(DEMfil,WatershedFile,HillslpFile,StreamFile,FlowDirFile,RillExtDir,UpStreamRouteFile,UpStreamRouteLenFile):
+def UpStreamRoute(DEMfil,WatershedFile,HillslpFile,StreamFile,FlowDirFile,RillExtDir,UpStreamRouteFile,UpStreamShp):
     stream = ReadRaster(StreamFile).data
     nrows,ncols = stream.shape
     nodata = ReadRaster(StreamFile).noDataValue
@@ -126,7 +127,7 @@ def UpStreamRoute(DEMfil,WatershedFile,HillslpFile,StreamFile,FlowDirFile,RillEx
     demfil = ReadRaster(DEMfil).data
     UpStream = numpy.ones((nrows,ncols))
     UpStream = UpStream * -9999
-    UpStreamShp = RillExtDir + os.sep + "UpStream.shp"
+    #UpStreamShp = RillExtDir + os.sep + "UpStream.shp"
     
     StreamPts = []
     for i in range(nrows):
@@ -160,11 +161,13 @@ def UpStreamRoute(DEMfil,WatershedFile,HillslpFile,StreamFile,FlowDirFile,RillEx
     #print segement_info
     WriteAscFile(RillExtDir + os.sep + "BoundCell.asc", BoundRaster,ncols,nrows,geotrans,-9999)
     f = open(UpStreamRouteFile,'w')
-    f.write(str(segement_info))
+    for s in segement_info:
+        f.write(str(s))
+        f.write('\n')    
     f.close()
-    f = open(UpStreamRouteLenFile,'w')
-    f.write(str(segeLength_info))
-    f.close()
+#    f = open(UpStreamRouteLenFile,'w')
+#    f.write(str(segeLength_info))
+#    f.close()
     
     arcpy.gp.overwriteOutput = 1
     for grids in segement_info:
@@ -183,14 +186,14 @@ def UpStreamRoute(DEMfil,WatershedFile,HillslpFile,StreamFile,FlowDirFile,RillEx
     arcpy.CopyFeatures_management(segements, UpStreamShp)
 
 
-def Shoulderpts(UpStreamRouteFile,UpStreamRouteLenFile,DEMfil,SlopeFile,SOSFile,RillExtDir,ShoulderptsFile,RealrillFile):
-    f = open(UpStreamRouteFile,'r')
-    segement_info = eval(f.readline())
-    f.close()
-    f = open(UpStreamRouteLenFile,'r')
-    segementLen_info = eval(f.readline())
-    f.close()
-    
+def Shoulderpts(UpStreamRouteFile,DEMfil,SlopeFile,SOSFile,RillExtDir,ShoulderptsFile,RealrillFile):
+#    f = open(UpStreamRouteFile,'r')
+#    segement_info = eval(f.readline())
+#    f.close()
+#    f = open(UpStreamRouteLenFile,'r')
+#    segementLen_info = eval(f.readline())
+#    f.close()
+
     dem = ReadRaster(DEMfil).data
     slope = ReadRaster(SlopeFile).data
     sos = ReadRaster(SOSFile).data
@@ -206,7 +209,9 @@ def Shoulderpts(UpStreamRouteFile,UpStreamRouteLenFile,DEMfil,SlopeFile,SOSFile,
     RouteSOS = []
     RouteElev = []
     RouteSlp = []
-    for grids in segement_info:
+    for segement in open(UpStreamRouteFile):
+        grids = eval(segement)
+    #for grids in segement_info:
         curRouteElev = []
         curRouteSlp = []
         curRouteSOS = []
@@ -271,7 +276,28 @@ def Shoulderpts(UpStreamRouteFile,UpStreamRouteLenFile,DEMfil,SlopeFile,SOSFile,
     
     WriteAscFile(RealrillFile, RealRill,ncols,nrows,geotrans,-9999)
     WriteAscFile(ShoulderptsFile, shoulderpts,ncols,nrows,geotrans,-9999)
-    
+def RelinkByNUM(flowdir,tempRill,num):
+    nrows,ncols = flowdir.shape
+    RealRill = numpy.copy(tempRill)
+    for i in range(1,nrows - 1):
+        for j in range(1,ncols - 1):
+            crow, ccol = downstream_index(flowdir[i][j],i,j)
+            if (not (crow < 1 or crow >= nrows - 2 or ccol < 1 or ccol >= ncols - 2)) and tempRill[i][j] == 1 and tempRill[crow][ccol] != 1:
+                count = 0
+                Relink = []
+                while count <= num:
+                    if (not (crow < 1 or crow >= nrows - 2 or ccol < 1 or ccol >= ncols - 2)) and tempRill[crow][ccol] != 1:
+                        Relink.append([crow, ccol])
+                        #RealRill[crow][ccol] = 1
+                        crow,ccol = downstream_index(flowdir[crow][ccol],crow,ccol)
+                        count = count + 1
+                    else:
+                        break
+                if count <=num:
+                    for pt in Relink:
+                        RealRill[pt[0]][pt[1]] = 1
+    return RealRill
+
 def RelinkRealRill(RealrillFile1,RealrillFile2,StreamFile,FlowDirFile,RealRillFinal):
     rill1 = ReadRaster(RealrillFile1).data
     rill2 = ReadRaster(RealrillFile2).data
@@ -286,21 +312,71 @@ def RelinkRealRill(RealrillFile1,RealrillFile2,StreamFile,FlowDirFile,RealRillFi
         for j in range(1,ncols - 1):
             if rill1[i][j] == 1 or rill2[i][j] == 1:
                 tempRill[i][j] = 1
-    RemoveLessPtsMtx(tempRill,-9999,2)
-    RealRill = numpy.copy(tempRill)
-    for i in range(1,nrows - 1):
-        for j in range(1,ncols - 1):
-            if tempRill[i][j] == 1:
-                count = 0
-                while count <= 5:
-                    crow, ccol = downstream_index(flowdir[i][j],i,j)
-                    if not (crow < 1 or crow >= nrows - 2 or ccol < 1 or ccol >= ncols - 2):
-                        if tempRill[crow][ccol] != 1:
-                            RealRill[crow][ccol] = 1
-                            i,j = crow,ccol
-                            count = count + 1
-                        else:
-                            break
-                    else:
-                        break
+    tempRill = RemoveLessPtsMtx(tempRill,-9999,5)
+    RealRill = RelinkByNUM(flowdir,tempRill,5)
+    RealRill = RemoveLessPtsMtx(RealRill,-9999,5)
+    RealRill = RelinkByNUM(flowdir,tempRill,20)
     WriteAscFile(RealRillFinal, RealRill,ncols,nrows,geotrans,-9999)
+def SimplifyByRillOrder(RealRillFile,FlowDirFile,tempDir,num,RillStFile,OrderStFile):
+    
+    ## delete some first-order rill by length threshold
+    changed = Delete1stOrderByTHR(RealRillFile,FlowDirFile,tempDir,num,RillStFile)
+    while changed != 0:
+        changed = Delete1stOrderByTHR(RillStFile,FlowDirFile,tempDir,num,RillStFile)
+        #print changed
+    arcpy.CheckOutExtension("spatial")
+    StreamFile = tempDir + os.sep + "rillSim"
+    StreamLinkFile = tempDir + os.sep + "rilllinks"
+    arcpy.gp.overwriteOutput = 1
+    OrderFile = tempDir + os.sep + "orderSim"
+    arcpy.ASCIIToRaster_conversion(RillStFile, StreamFile,"INTEGER")
+    outStreamLink = arcpy.sa.StreamLink(StreamFile,FlowDirFile)
+    outStreamLink.save(StreamLinkFile)
+    GRID2ASC(StreamLinkFile,RillStFile)
+    outStreamOrder = arcpy.sa.StreamOrder(StreamFile, FlowDirFile, "STRAHLER")
+    outStreamOrder.save(OrderFile)
+    GRID2ASC(OrderFile,OrderStFile)
+    
+def Delete1stOrderByTHR(RealRillFile,FlowDirFile,tempDir,num,RillStFile):
+    changed = 0
+    arcpy.CheckOutExtension("spatial")
+    arcpy.gp.overwriteOutput = 1
+    StreamFile = tempDir + os.sep + "rillori"
+    
+    OrderFile = tempDir + os.sep + "orderori"
+    arcpy.ASCIIToRaster_conversion(RealRillFile, StreamFile,"INTEGER")
+    outStreamOrder = arcpy.sa.StreamOrder(StreamFile, FlowDirFile, "STRAHLER")
+    outStreamOrder.save(OrderFile)
+         
+    order = ReadRaster(OrderFile).data
+    flowdir = ReadRaster(FlowDirFile).data
+    rill = ReadRaster(RealRillFile).data
+    nrows,ncols = order.shape
+    nodata = ReadRaster(OrderFile).noDataValue
+    geotrans = ReadRaster(OrderFile).geotrans
+    FstOrdCellHd = []
+    for i in range(nrows):
+        for j in range(ncols):
+            if isFirstStreamCell(order, nodata, i, j, flowdir) and order[i][j] == 1:
+                FstOrdCellHd.append([i,j])
+    for cell in FstOrdCellHd:
+        crow,ccol = cell
+        count = 0
+        cells = []
+        while order[crow][ccol] == 1:
+            count = count + 1
+            cells.append([crow,ccol])
+            crow,ccol = downstream_index(flowdir[crow][ccol],crow,ccol)
+            if crow < 0 or crow >= nrows or ccol < 0 or ccol >= ncols:
+                break
+        #print count
+        if count <= num:
+            changed = changed + 1
+            for c in cells:
+                rill[c[0]][c[1]] = -9999
+    WriteAscFile(RillStFile, rill,ncols,nrows,geotrans,-9999)
+    return changed
+       
+    
+    
+    

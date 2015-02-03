@@ -4,6 +4,7 @@ from osgeo import gdal
 from osgeo import osr
 import os,sys
 import arcpy
+import numpy
 from arcpy import env
 
 sys.setrecursionlimit(1000000) ## to avoid the error: maximum recursion depth exceeded in cmp
@@ -192,13 +193,16 @@ def RemoveLessPtsMtx(raster,nodata,num):
 def GRID2ASC(GRID,ASC):
     grid = ReadRaster(GRID).data
     nodata = ReadRaster(GRID).noDataValue
+    #print nodata
     geotrans = ReadRaster(GRID).geotrans
     nrows,ncols = grid.shape
+    temp = numpy.ones((nrows,ncols))
+    temp = temp * -9999
     for i in range(nrows):
         for j in range(ncols):
-            if grid[i][j] == nodata:
-                grid[i][j] = -9999
-    WriteAscFile(ASC, grid,ncols,nrows,geotrans,-9999)    
+            if grid[i][j] != nodata:
+                temp[i][j] = grid[i][j]
+    WriteAscFile(ASC, temp,ncols,nrows,geotrans,-9999.0)    
 def GetUniqueValues(RasterFile):
     raster = ReadRaster(RasterFile).data
     nodata = ReadRaster(RasterFile).noDataValue

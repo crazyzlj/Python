@@ -54,6 +54,9 @@ def RillIndexCalc(StreamOrderFile,DEMbuf,tempDir,StatsDir):
     
 def GenerateWatershedByStream(StreamFile,FlowDirFile, tempDir, WatershedFile):
     print "Regenerating watershed by real rill network..."
+    arcpy.CheckOutExtension("spatial")
+    arcpy.gp.overwriteOutput = 1
+    
     tempStream = tempDir + os.sep + "StmNet"
     arcpy.ASCIIToRaster_conversion(StreamFile, tempStream,"INTEGER")    
     Watershed = arcpy.sa.Watershed(FlowDirFile,tempStream,"VALUE")

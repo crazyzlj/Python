@@ -97,8 +97,6 @@ def DelineateHillslopes(StreamFile,FlowDirFile,HillslpFile):
         HillslopeMtx = HillslopeMtx * -9999
     else:
         HillslopeMtx = HillslopeMtx * nodata
-    
-
     for SourcePt in SourcePtsIdx:
         #print SourcePt
         cRow,cCol = SourcePt

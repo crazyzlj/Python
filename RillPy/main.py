@@ -43,16 +43,30 @@ if __name__ == '__main__':
     FlowDirFile = PreprocessDir + os.sep + "flowdir"
     FlowAccFile = PreprocessDir + os.sep + "flowacc"
     UpStreamRouteFile = RillExtDir + os.sep + "UpstreamRoute.txt"
-    UpStreamRouteLenFile = RillExtDir + os.sep + "UpstreamRouteLen.txt"
+    UpStreamRouteShp = RillExtDir + os.sep + "UpstreamRoute.shp"
     ShoulderptsFile = RillExtDir + os.sep + "Shoulderpts.asc"
     RealrillFile1 = RillExtDir + os.sep + "Realrill1.asc"
     RealrillFile2 = RillExtDir + os.sep + "Realrill2.asc"
     RillEdgeFile = RillExtDir + os.sep + "RealEdge.asc"
     RealRillFinal = RillExtDir + os.sep + "RealRill.asc"
-    #Rill.UpStreamRoute(DEMfil,WatershedFile,HillslpFile,StreamFile,FlowDirFile,RillExtDir,UpStreamRouteFile,UpStreamRouteLenFile)
-    #Rill.Shoulderpts(UpStreamRouteFile,UpStreamRouteLenFile,DEMfil,SlopeFile,SOSFile,RillExtDir,ShoulderptsFile,RealrillFile1)
+    RillStFile = RillExtDir + os.sep + "RealRillFinal.asc"
+    OrderStFile = RillExtDir + os.sep + "RillOrderFinal.asc"
+    FinalWtdFile = RillExtDir + os.sep + "WatershedFinal.asc"
+    HillslpFinalFile = RillExtDir + os.sep + "HillslpFinal.asc"
+    UpStreamRouteFinalFile = RillExtDir + os.sep + "UpstreamRouteFinal.txt"
+    UpStreamRouteFinalShp = RillExtDir + os.sep + "UpstreamRouteFinal.shp"
+    ShoulderptsFinalFile = RillExtDir + os.sep + "ShoulderptsFinal.asc"
+    RealrillFile1Final = RillExtDir + os.sep + "Realrill1final.asc"
+    #Rill.UpStreamRoute(DEMfil,WatershedFile,HillslpFile,StreamFile,FlowDirFile,RillExtDir,UpStreamRouteFile,UpStreamRouteShp)
+    #Rill.Shoulderpts(UpStreamRouteFile,DEMfil,SlopeFile,SOSFile,RillExtDir,ShoulderptsFile,RealrillFile1)
     #Rill.IdentifyRillRidges(HillslpFile,StreamFile,FlowDirFile,FlowAccFile,WatershedFile,DEMfil,RealrillFile2,RillEdgeFile)
-    Rill.RelinkRealRill(RealrillFile1,RealrillFile2,StreamFile,FlowDirFile,RealRillFinal)
+    #Rill.RelinkRealRill(RealrillFile1,RealrillFile2,StreamFile,FlowDirFile,RealRillFinal)
+    #Rill.SimplifyByRillOrder(RealRillFinal,FlowDirFile,tempDir,5,RillStFile,OrderStFile)
+    #Subbasin.GenerateWatershedByStream(RillStFile,FlowDirFile, tempDir, FinalWtdFile)
+    #Hillslope.DelineateHillslopes(RillStFile,FlowDirFile,HillslpFinalFile)
+    #Rill.UpStreamRoute(DEMfil,FinalWtdFile,HillslpFinalFile,RillStFile,FlowDirFile,RillExtDir,UpStreamRouteFinalFile,UpStreamRouteFinalShp)
+    Rill.Shoulderpts(UpStreamRouteFinalFile,DEMfil,SlopeFile,SOSFile,RillExtDir,ShoulderptsFinalFile,RealrillFile1Final)
+       
     
     #alpha = 25
     #beta = 5
