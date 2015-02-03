@@ -144,45 +144,34 @@ def UpStreamRoute(DEMfil,WatershedFile,HillslpFile,StreamFile,FlowDirFile,RillEx
     BoundRaster = numpy.ones((nrows,ncols))
     BoundRaster = BoundRaster * -9999
     segement_info = []
-    segeLength_info = []
+    #segeLength_info = []
     # A list that will hold each of the Polyline objects
+    f = open(UpStreamRouteFile,'w')  ## write the single stream route to txt by line
+    arcpy.gp.overwriteOutput = 1
+    segements = []                   ## Generating ArcGIS polyline
     for cell in boundCells:
         BoundRaster[cell[0]][cell[1]] = 1
         curSege = SingleDownstream(cell,flowdir,stream,nodata)
-        curSegeLen = []
-        curSegeLen.append(1)
-        for i in range(1,len(curSege)):
-            if flowdir[curSege[i][0]][curSege[i][1]] in [2,8,32,128]:
-                curSegeLen.append(curSegeLen[i-1] + math.sqrt(2))
-            else:
-                curSegeLen.append(curSegeLen[i-1] + 1)
-        segeLength_info.append(curSegeLen)
-        segement_info.append(curSege)
-    #print segement_info
-    WriteAscFile(RillExtDir + os.sep + "BoundCell.asc", BoundRaster,ncols,nrows,geotrans,-9999)
-    f = open(UpStreamRouteFile,'w')
-    for s in segement_info:
-        f.write(str(s))
-        f.write('\n')    
-    f.close()
-#    f = open(UpStreamRouteLenFile,'w')
-#    f.write(str(segeLength_info))
-#    f.close()
-    
-    arcpy.gp.overwriteOutput = 1
-    for grids in segement_info:
-        for grid in grids:
+#        curSegeLen = []
+#        curSegeLen.append(1)
+#        for i in range(1,len(curSege)):
+#            if flowdir[curSege[i][0]][curSege[i][1]] in [2,8,32,128]:
+#                curSegeLen.append(curSegeLen[i-1] + math.sqrt(2))
+#            else:
+#                curSegeLen.append(curSegeLen[i-1] + 1)
+        #segeLength_info.append(curSegeLen)
+        #segement_info.append(curSege)
+        f.write(str(curSege))
+        f.write('\n')
+        for grid in curSege:
             row = grid[0]
             col = grid[1]
             grid[0] = geotrans[0] + ( col + 0.5 ) * geotrans[1]
             grid[1] = geotrans[3] - ( row + 0.5 ) * geotrans[1]
-    segements = []
-    for segement in segement_info:
-        # Create a Polyline object based on the array of points
-        # Append to the list of Polyline objects
-        segements.append(
-            arcpy.Polyline(
-                arcpy.Array([arcpy.Point(*coords) for coords in segement])))
+        segements.append(arcpy.Polyline(arcpy.Array([arcpy.Point(*coords) for coords in curSege])))
+        
+    WriteAscFile(RillExtDir + os.sep + "BoundCell.asc", BoundRaster,ncols,nrows,geotrans,-9999)   
+    f.close()        
     arcpy.CopyFeatures_management(segements, UpStreamShp)
 
 
