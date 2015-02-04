@@ -77,20 +77,20 @@ import math,copy
 #print EdgeIdx
 
 
-lists = [[[55, 62], [56, 62], [57, 62], [58, 62], [59, 63], [60, 64]], [[58, 63], [59, 64], [60, 64]], [[57, 63], [58, 64], [59, 64], [60, 64]], [[56, 63], [57, 64], [58, 64], [59, 64], [60, 64]], [[51, 59], [52, 60], [53, 61], [54, 62], [55, 63], [56, 64], [57, 64], [58, 64], [59, 64], [60, 64]], [[43, 60], [44, 60], [45, 60], [46, 60], [47, 60], [48, 60], [49, 60], [50, 60], [51, 60], [52, 61], [53, 62], [54, 63], [55, 64], [56, 64], [57, 64], [58, 64], [59, 64], [60, 64]], [[45, 61], [46, 61], [47, 61], [48, 61], [49, 60], [50, 60], [51, 60], [52, 61], [53, 62], [54, 63], [55, 64], [56, 64], [57, 64], [58, 64], [59, 64], [60, 64]], [[37, 60], [38, 60], [39, 61], [40, 61], [41, 61], [42, 61], [43, 61], [44, 61], [45, 62], [46, 62], [47, 62], [48, 61], [49, 60], [50, 60], [51, 60], [52, 61], [53, 62], [54, 63], [55, 64], [56, 64], [57, 64], [58, 64], [59, 64], [60, 64]]]
-#print lists
-f = open(r'e:\test.txt','w')
-for list in lists:
-    ##print list
-    f.write(str(list))
-    f.write('\n')
-f.close()
-count = 0
-for line in open(r'e:\test.txt'):
-    count = count + 1
-    s = eval(line)
-    print len(s)
-print count
+#lists = [[[55, 62], [56, 62], [57, 62], [58, 62], [59, 63], [60, 64]], [[58, 63], [59, 64], [60, 64]], [[57, 63], [58, 64], [59, 64], [60, 64]], [[56, 63], [57, 64], [58, 64], [59, 64], [60, 64]], [[51, 59], [52, 60], [53, 61], [54, 62], [55, 63], [56, 64], [57, 64], [58, 64], [59, 64], [60, 64]], [[43, 60], [44, 60], [45, 60], [46, 60], [47, 60], [48, 60], [49, 60], [50, 60], [51, 60], [52, 61], [53, 62], [54, 63], [55, 64], [56, 64], [57, 64], [58, 64], [59, 64], [60, 64]], [[45, 61], [46, 61], [47, 61], [48, 61], [49, 60], [50, 60], [51, 60], [52, 61], [53, 62], [54, 63], [55, 64], [56, 64], [57, 64], [58, 64], [59, 64], [60, 64]], [[37, 60], [38, 60], [39, 61], [40, 61], [41, 61], [42, 61], [43, 61], [44, 61], [45, 62], [46, 62], [47, 62], [48, 61], [49, 60], [50, 60], [51, 60], [52, 61], [53, 62], [54, 63], [55, 64], [56, 64], [57, 64], [58, 64], [59, 64], [60, 64]]]
+##print lists
+#f = open(r'e:\test.txt','w')
+#for list in lists:
+#    ##print list
+#    f.write(str(list))
+#    f.write('\n')
+#f.close()
+#count = 0
+#for line in open(r'e:\test.txt'):
+#    count = count + 1
+#    s = eval(line)
+#    print len(s)
+#print count
 
 
 #    annotation from Rill.Shoulderpts
@@ -118,3 +118,49 @@ print count
 #    for elev in RouteElev:
 #        f.write(str(elev))
 #    f.close()
+
+def isAdjacent(ptStd,ptEnd):
+    flag = 0
+    for i in [-1,0,1]:
+        for j in [-1,0,1]:
+            crow = ptStd[0]+i
+            ccol = ptStd[1]+j
+            if [crow,ccol] == ptEnd:
+                flag = 1
+                return True
+    if flag == 0:
+        return False
+
+def InterpLine(ptStd,ptEnd):
+    Srow,Scol = ptStd
+    Erow,Ecol = ptEnd
+    Sr = min(Srow,Erow)
+    Er = max(Srow,Erow)
+    Sc = min(Scol,Ecol)
+    Ec = max(Scol,Ecol)
+    Idxs = []
+    if isAdjacent(ptStd,ptEnd):
+        return Idxs
+    elif Srow == Erow:
+        for i in range(Sc + 1,Ec):
+            Idxs.append([Srow,i])
+    elif Scol == Ecol:
+        for i in range(Sr + 1,Er):
+            Idxs.append([i,Scol])
+    else:
+        for i in range(Sc + 1,Ec):
+            #crow = int(round((float(Erow-Srow)/float(Ecol-Scol))*(i - Scol)))
+            crow = int(round(float(Erow-Srow)/float(Ecol-Scol)*(i - Scol)+Srow))
+            Idxs.append([crow,i])
+        for j in range(Sr + 1,Er):
+            ccol = int(round(float(Ecol-Scol)/float(Erow-Srow)*(j - Srow) + Scol))
+            Idxs.append([j,ccol])
+    uniqueIdxs = []
+    for idx in Idxs:
+        if idx not in uniqueIdxs:
+            uniqueIdxs.append(idx)
+    uniqueIdxs.sort()
+    return uniqueIdxs
+idxs = InterpLine([86,93],[85,96])
+#idxs = list(set(idxs))
+print idxs

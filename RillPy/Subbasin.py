@@ -65,7 +65,16 @@ def GenerateWatershedByStream(StreamFile,FlowDirFile, tempDir, WatershedFile):
     GRID2ASC(tempWtshd,WatershedFile)
     
 
-    
+def basinIDIdx(basinID,value):
+    flag = 0
+    for basins in basinID:
+        if value in basins:
+            flag = 1
+            return basinID.index(basins) + 1
+    if flag == 0:
+        return -9999
+            
+
 def ExtractBasinBoundary(Basin,basinID,BasinBoundary):
     basin = ReadRaster(Basin).data
     nodata = ReadRaster(Basin).noDataValue
@@ -73,21 +82,19 @@ def ExtractBasinBoundary(Basin,basinID,BasinBoundary):
     geotrans = ReadRaster(Basin).geotrans
     nrows,ncols = basin.shape
     Boundary = numpy.ones((nrows,ncols))
-    if nodata != -9999:
-        Boundary = Boundary * -9999
-    else:
-        Boundary = Boundary * nodata
+    Boundary = Boundary * nodata
     
     for i in range(nrows):
         for j in range(ncols):
-            if basin[i][j] in basinID:
-                #count = count + 1
-                basin[i][j] = 1
-            else:
-                basin[i][j] = nodata
+            if basin[i][j] != nodata:
+                basin[i][j] = basinIDIdx(basinID,basin[i][j])
     for i in range(nrows):
         for j in range(ncols):
             if isEdge(basin,i,j,nodata):
-                Boundary[i][j] = 1
-    WriteAscFile(BasinBoundary, Boundary,ncols,nrows,geotrans,-9999)
+                Boundary[i][j] = basin[i][j]
+#    num,Boundary = simplifyBoundary(Boundary,nodata)
+#    print num
+#    while num != 0:
+#        num,Boundary = simplifyBoundary(Boundary,nodata)
+    WriteAscFile(BasinBoundary, Boundary,ncols,nrows,geotrans,nodata)
     

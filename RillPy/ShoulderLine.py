@@ -83,31 +83,96 @@ def RillShoulderSegement(Boundary,FlowDir,ShoulderPts,ShoulderFile):
         for j in range(ncols):
             if boundary[i][j] != nodata:
                 #print i,j
-                bndIdx.append((i,j))
+                bndIdx.append([i,j])
     iterate = 0
-    changed = 1
-    while not(changed == 0 or iterate > 150):
-        print "iterate time:%s, changed num:%s, boundary num:%s" % (iterate,changed,len(bndIdx))
-        changed = 0
-        tempbndIdx = []
-        for bnd in bndIdx:
-            if shoulderpts[bnd[0]][bnd[1]] == 1:
-                tempbndIdx.append((bnd[0],bnd[1]))
+    changed = 0
+    
+    tempBnd = []
+    tempBnd.extend(bndIdx)
+    pairPts = []
+    prev = []
+    currcell = tempBnd[0]
+    nextcell = []
+    while len(tempBnd) > 0:
+        nextcell = NearCells(boundary,nodata,currcell[0],currcell[1])
+        if nextcell != [] and currcell in nextcell:
+            nextcell.remove(currcell)
+        if nextcell != [] and prev != [] and prev in nextcell:
+            nextcell.remove(prev)
+        if nextcell == [] or nextcell == None:
+            prev = []
+            currcell = tempBnd[0]
+        elif len(nextcell) >= 1:
+            pairPts.append([currcell,nextcell[0]])
+            tempBnd.remove(nextcell[0])
+            boundary[nextcell[0][0]][nextcell[0][1]] = nodata
+            prev = currcell
+            currcell = nextcell[0]
+    #print pairPts
+    #print len(pairPts)
+    for pts in pairPts:
+        for pt in pts:
+            if shoulderpts[pt[0]][pt[1]] != nodata:
+                tempBnd.append(pt)
             else:
-                row,col = downstream_index(flowdir[bnd[0]][bnd[1]], bnd[0],bnd[1])
+                row,col = downstream_index(flowdir[pt[0]][pt[1]], pt[0],pt[1])
                 if row < 0 or row >= nrows or col < 0 or col >= ncols:
-                    tempbndIdx.append((bnd[0],bnd[1]))
+                    tempBnd.append(pt)
                 else:
-                    tempbndIdx.append((row,col))
+                    tempBnd.append([row,col])
+                    pairPts[pairPts.index(pts)][pts.index(pt)] = [row,col]
                     changed = changed + 1
-        tempbndIdx = list(set(tempbndIdx))
-        bndIdx = tempbndIdx
-        iterate = iterate + 1
-    shoulder = numpy.ones((nrows,ncols))
-    shoulder = shoulder * nodata
-    for sd in bndIdx:
-        shoulder[sd[0]][sd[1]] = 1
-    WriteAscFile(ShoulderFile, shoulder,ncols,nrows,geotrans,nodata)
+    #print pairPts
+    for pts in pairPts:
+        #print InterpLine(pts[0],pts[1])
+        tempBnd.extend(InterpLine(pts[0],pts[1]))
+    uniqueIdxs = []
+    for idx in tempBnd:
+        if idx not in uniqueIdxs:
+            uniqueIdxs.append(idx)
+    tempBnd = []
+    tempBnd.extend(uniqueIdxs)
+
+    for pt in tempBnd:
+        row,col = pt
+        if row >= 0 and row < nrows and col >= 0 and col < ncols:
+            boundary[row][col] = 1
+        else:
+            tempBnd.remove(pt)
+    #print tempBnd
+    #num,boundary = simplifyBoundary(boundary,nodata)
+    #print num
+#    while num != 0:
+#        num,boundary = simplifyBoundary(boundary,nodata)
+    iterate = iterate + 1
+    WriteAscFile(ShoulderFile, boundary,ncols,nrows,geotrans,-9999)
+
+        
+        
+        
+#    while not(changed == 0 or iterate > 5):
+#        print "iterate time:%s, changed num:%s, boundary num:%s" % (iterate,changed,len(bndIdx))
+#        changed = 0
+#        tempbndIdx = []
+#        for bnd in bndIdx:
+#            if shoulderpts[bnd[0]][bnd[1]] == 1:
+#                tempbndIdx.append((bnd[0],bnd[1]))
+#            else:
+#                row,col = downstream_index(flowdir[bnd[0]][bnd[1]], bnd[0],bnd[1])
+#                if row < 0 or row >= nrows or col < 0 or col >= ncols:
+#                    tempbndIdx.append((bnd[0],bnd[1]))
+#                else:
+#                    tempbndIdx.append((row,col))
+#                    changed = changed + 1
+#        tempbndIdx = list(set(tempbndIdx))
+#        bndIdx = tempbndIdx
+#        iterate = iterate + 1
+#        
+#    shoulder = numpy.ones((nrows,ncols))
+#    shoulder = shoulder * -9999
+#    for sd in bndIdx:
+#        shoulder[sd[0]][sd[1]] = 1
+#    WriteAscFile(ShoulderFile, shoulder,ncols,nrows,geotrans,-9999)
 
 def RillShoulder(BasinFile,FlowDir,ShoulderPts,tempDir,ShoulderFile):
     UniqueBasinId = GetUniqueValues(BasinFile)

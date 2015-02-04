@@ -220,12 +220,23 @@ def GetUniqueValues(RasterFile):
                     value.append(raster[i][j])
     value = list(set(value))
     return value
+def NearCells(raster,nodata,row,col):
+    nrows,ncols = raster.shape
+    nearcell = []
+    for di in [-1,0,1]:
+        for dj in [-1,0,1]:
+            ni = row + di
+            nj = col + dj
+            if ni >= 0 and ni < nrows and nj >=0 and nj < ncols and raster[ni][nj] != nodata:
+                nearcell.append([ni,nj])
+    return nearcell
 
 def isEdge(raster,row,col,nodata):
     nrows,ncols = raster.shape
-    if (row == 0 or row == nrows-1 or col == 0 or col == ncols-1) and raster[row][col] != nodata:
+    curvalue = raster[row][col]
+    if (row == 0 or row == nrows-1 or col == 0 or col == ncols-1) and (curvalue != nodata):
         return True
-    elif raster[row][col] == nodata:
+    elif curvalue == nodata:
         return False
     else:
         count = 0
@@ -233,9 +244,10 @@ def isEdge(raster,row,col,nodata):
             for dj in [-1,0,1]:
                 ni = row + di
                 nj = col + dj
-                if raster[ni][nj] == nodata:
+                if raster[ni][nj] == nodata or raster[ni][nj] != curvalue:
                     count = count + 1
         if count > 0:
+            #print count
             return True
         else:
             return False
@@ -248,32 +260,76 @@ def ExtractBoundary(raster,nodata):
         for j in range(ncols):
             if isEdge(raster,i,j,nodata):
                 Boundary[i][j] = 1
-#    for i in range(nrows):
-#        for j in range(ncols):
-#            if raster[i][j] != nodata:
-#                tempIdx = []
-#                ContinuousGRID(raster,i,j,tempIdx)
-#                tempIdx = list(set(tempIdx))
-#                count = len(tempIdx)
-#                for rc in tempIdx:
-#                    raster[rc[0]][rc[1]] = count
-#    unique = numpy.unique(raster)
-#    unique.sort()
-#    print unique
+    num,Boundary = simplifyBoundary(Boundary,nodata)
+    while num != 0:
+        num,Boundary = simplifyBoundary(Boundary,nodata)
     return Boundary
-
-def InterpLine(Srow,Scol,Erow,Ecol):
+def simplifyBoundary(raster,nodata):
+    nrows,ncols = raster.shape
+    #SimRaster = numpy.copy(raster)
+    num = [0,0,0,0,0,0,0,0,0]
+    for i in range(nrows):
+        for j in range(ncols):
+            if raster[i][j] != nodata:
+                nearcell = NearCells(raster,nodata,i,j)
+                num[len(nearcell)-1] = num[len(nearcell)-1] + 1
+                if len(nearcell) == 4:
+                    if ([i+1,j+1] in nearcell or [i-1,j+1] in nearcell) and [i,j+1] in nearcell:
+                        raster[i][j+1] = nodata
+                    elif ([i+1,j-1] in nearcell or [i-1,j-1] in nearcell) and [i,j-1] in nearcell:
+                        raster[i][j-1] = nodata
+                    elif ([i-1,j+1] in nearcell or [i-1,j-1] in nearcell) and [i-1,j] in nearcell:
+                        raster[i-1][j] = nodata
+                    elif ([i+1,j+1] in nearcell or [i+1,j-1] in nearcell) and [i+1,j] in nearcell:
+                        raster[i+1][j] = nodata
+    #print num
+    #return SimRaster
+    return (num[3],raster)
+def isAdjacent(ptStd,ptEnd):
+    flag = 0
+    for i in [-1,0,1]:
+        for j in [-1,0,1]:
+            crow = ptStd[0]+i
+            ccol = ptStd[1]+j
+            if [crow,ccol] == ptEnd:
+                flag = 1
+                return True
+    if flag == 0:
+        return False
+def InterpLine(ptStd,ptEnd):
+    Srow,Scol = ptStd
+    Erow,Ecol = ptEnd
+    Sr = min(Srow,Erow)
+    Er = max(Srow,Erow)
+    Sc = min(Scol,Ecol)
+    Ec = max(Scol,Ecol)
     Idxs = []
-    if Scol != Ecol:
-        Sc = max(Scol,Ecol)
-        Ec = min(Scol,Ecol)
-        
+    if isAdjacent(ptStd,ptEnd):
+        return Idxs
+    elif Srow == Erow:
+        for i in range(Sc + 1,Ec):
+            Idxs.append([Srow,i])
+    elif Scol == Ecol:
+        for i in range(Sr + 1,Er):
+            Idxs.append([i,Scol])
     else:
-        Sr = max(Srow,Erow)
-        Er = min(Srow,Erow)
-        for i in range(Sr,Er):
-            Idxs.append([Sr + i + 1,Scol])
-    return Idxs
+        for i in range(Sc + 1,Ec):
+            #crow = int(round((float(Erow-Srow)/float(Ecol-Scol))*(i - Scol)))
+            crow = int(round(float(Erow-Srow)/float(Ecol-Scol)*(i - Scol)+Srow))
+            Idxs.append([crow,i])
+        for j in range(Sr + 1,Er):
+            ccol = int(round(float(Ecol-Scol)/float(Erow-Srow)*(j - Srow) + Scol))
+            Idxs.append([j,ccol])
+    uniqueIdxs = []
+    for idx in Idxs:
+        if idx not in uniqueIdxs:
+            uniqueIdxs.append(idx)
+    uniqueIdxs.sort()
+    return uniqueIdxs
+
+
+
+
 ##  End Utility Functions ##
 
 ## DEM Preprocessing  ##
