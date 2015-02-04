@@ -239,14 +239,17 @@ def isEdge(raster,row,col,nodata):
     elif curvalue == nodata:
         return False
     else:
-        count = 0
+        nodatacount = 0
+        valuecount = 0
         for di in [-1,0,1]:
             for dj in [-1,0,1]:
                 ni = row + di
                 nj = col + dj
-                if raster[ni][nj] == nodata or raster[ni][nj] != curvalue:
-                    count = count + 1
-        if count > 0:
+                if raster[ni][nj] == nodata:
+                    nodatacount = nodatacount + 1
+                elif raster[ni][nj] != curvalue:
+                    valuecount = valuecount + 1
+        if valuecount > 1 or nodatacount > 0:
             #print count
             return True
         else:
@@ -264,8 +267,25 @@ def ExtractBoundary(raster,nodata):
     while num != 0:
         num,Boundary = simplifyBoundary(Boundary,nodata)
     return Boundary
+def EliminateDanglePoint(raster,nodata):
+    nrows,ncols = raster.shape
+    dangle = 0
+    for i in range(nrows):
+        for j in range(ncols):
+            if raster[i][j] != nodata:
+                temp = NearCells(raster,nodata,i,j)
+                if len(temp) in [0,1,2]:
+                    raster[i][j] = nodata
+                    #print i,j
+                    dangle = dangle + 1
+    return (dangle,raster)
 def simplifyBoundary(raster,nodata):
     nrows,ncols = raster.shape
+    DangleNum,raster = EliminateDanglePoint(raster,nodata)
+    print "DangleNum:%s" % DangleNum
+    while DangleNum != 0:
+        DangleNum,raster = EliminateDanglePoint(raster,nodata)
+        print "DangleNum:%s" % DangleNum
     #SimRaster = numpy.copy(raster)
     num = [0,0,0,0,0,0,0,0,0]
     for i in range(nrows):
@@ -282,7 +302,58 @@ def simplifyBoundary(raster,nodata):
                         raster[i-1][j] = nodata
                     elif ([i+1,j+1] in nearcell or [i+1,j-1] in nearcell) and [i+1,j] in nearcell:
                         raster[i+1][j] = nodata
-    #print num
+    print num
+#    num = [0,0,0,0,0,0,0,0,0]
+#    for i in reversed(range(nrows)):
+#        for j in range(ncols):
+#            if raster[i][j] != nodata:
+#                nearcell = NearCells(raster,nodata,i,j)
+#                num[len(nearcell)-1] = num[len(nearcell)-1] + 1
+#                if len(nearcell) == 4:
+#                    if ([i+1,j+1] in nearcell or [i-1,j+1] in nearcell) and [i,j+1] in nearcell:
+#                        raster[i][j+1] = nodata
+#                    elif ([i+1,j-1] in nearcell or [i-1,j-1] in nearcell) and [i,j-1] in nearcell:
+#                        raster[i][j-1] = nodata
+#                    elif ([i-1,j+1] in nearcell or [i-1,j-1] in nearcell) and [i-1,j] in nearcell:
+#                        raster[i-1][j] = nodata
+#                    elif ([i+1,j+1] in nearcell or [i+1,j-1] in nearcell) and [i+1,j] in nearcell:
+#                        raster[i+1][j] = nodata
+#    
+#    print num
+#    num = [0,0,0,0,0,0,0,0,0]
+#    for j in range(ncols):
+#        for i in range(nrows):
+#            if raster[i][j] != nodata:
+#                nearcell = NearCells(raster,nodata,i,j)
+#                num[len(nearcell)-1] = num[len(nearcell)-1] + 1
+#                if len(nearcell) == 4:
+#                    if ([i+1,j+1] in nearcell or [i-1,j+1] in nearcell) and [i,j+1] in nearcell:
+#                        raster[i][j+1] = nodata
+#                    elif ([i+1,j-1] in nearcell or [i-1,j-1] in nearcell) and [i,j-1] in nearcell:
+#                        raster[i][j-1] = nodata
+#                    elif ([i-1,j+1] in nearcell or [i-1,j-1] in nearcell) and [i-1,j] in nearcell:
+#                        raster[i-1][j] = nodata
+#                    elif ([i+1,j+1] in nearcell or [i+1,j-1] in nearcell) and [i+1,j] in nearcell:
+#                        raster[i+1][j] = nodata
+#    
+#    print num
+#    num = [0,0,0,0,0,0,0,0,0]
+#    for j in reversed(range(ncols)):
+#        for i in range(nrows):    
+#            if raster[i][j] != nodata:
+#                nearcell = NearCells(raster,nodata,i,j)
+#                num[len(nearcell)-1] = num[len(nearcell)-1] + 1
+#                if len(nearcell) == 4:
+#                    if ([i+1,j+1] in nearcell or [i-1,j+1] in nearcell) and [i,j+1] in nearcell:
+#                        raster[i][j+1] = nodata
+#                    elif ([i+1,j-1] in nearcell or [i-1,j-1] in nearcell) and [i,j-1] in nearcell:
+#                        raster[i][j-1] = nodata
+#                    elif ([i-1,j+1] in nearcell or [i-1,j-1] in nearcell) and [i-1,j] in nearcell:
+#                        raster[i-1][j] = nodata
+#                    elif ([i+1,j+1] in nearcell or [i+1,j-1] in nearcell) and [i+1,j] in nearcell:
+#                        raster[i+1][j] = nodata
+#    print num
+    
     #return SimRaster
     return (num[3],raster)
 def isAdjacent(ptStd,ptEnd):

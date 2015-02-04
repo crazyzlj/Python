@@ -145,7 +145,7 @@ def RillShoulderSegement(Boundary,FlowDir,ShoulderPts,ShoulderFile):
 #    while num != 0:
 #        num,boundary = simplifyBoundary(boundary,nodata)
     iterate = iterate + 1
-    WriteAscFile(ShoulderFile, boundary,ncols,nrows,geotrans,-9999)
+    WriteAscFile(ShoulderFile, tempBnd,ncols,nrows,geotrans,-9999)
 
         
         

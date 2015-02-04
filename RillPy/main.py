@@ -80,7 +80,7 @@ if __name__ == '__main__':
     #Basin = PreprocessDir + os.sep + "basin"
     #Watershed = tempDir + os.sep + "watershed"
     watershedID = [[1,2,3,4,5,6,7,8,9,10,11,14],[12,13,15,17],[16,18,19]]
-    Subbasin.ExtractBasinBoundary(FinalWtdFile,watershedID,SnakeICCFile)
+    Subbasin.ExtractBasinBoundary(FinalWtdFile,FlowDirFile,watershedID,SnakeICCFile)
     #Shoulder = RillExtDir + os.sep + "Shoulder.asc"
     #ShoulderLine.RillShoulderSegement(BasinBoundary,FlowDirFile,ShoulderPts,Shoulder)
     #ShoulderLine.RillShoulder(Watershed,FlowDirFile,ShoulderPts,tempDir,Shoulder)

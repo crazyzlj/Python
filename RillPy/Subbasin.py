@@ -75,8 +75,9 @@ def basinIDIdx(basinID,value):
         return -9999
             
 
-def ExtractBasinBoundary(Basin,basinID,BasinBoundary):
+def ExtractBasinBoundary(Basin,FlowDirFile,basinID,BasinBoundary):
     basin = ReadRaster(Basin).data
+    flowdir = ReadRaster(FlowDirFile).data
     nodata = ReadRaster(Basin).noDataValue
     #print nodata
     geotrans = ReadRaster(Basin).geotrans
@@ -92,9 +93,30 @@ def ExtractBasinBoundary(Basin,basinID,BasinBoundary):
         for j in range(ncols):
             if isEdge(basin,i,j,nodata):
                 Boundary[i][j] = basin[i][j]
+    ## find the unique values of boundary
+    values = []
+    for i in range(nrows):
+        for j in range(ncols):
+            if Boundary[i][j] != nodata:
+                if not (Boundary[i][j] in values):
+                    values.append(Boundary[i][j])
+    values = list(set(values))
+    #finalBound = numpy.ones((nrows,ncols))
+    #finalBound = finalBound * nodata
+    #for value in values:
+    tempBound = numpy.ones((nrows,ncols))
+    tempBound = tempBound * nodata
+    for i in range(nrows):
+        for j in range(ncols):
+            if Boundary[i][j] == 1:
+                tempBound[i][j] = 1
+    num,tempBound = simplifyBoundary(tempBound,nodata)
+    print num
+    while num != 0:
+        num,tempBound = simplifyBoundary(tempBound,nodata)
 #    num,Boundary = simplifyBoundary(Boundary,nodata)
 #    print num
 #    while num != 0:
 #        num,Boundary = simplifyBoundary(Boundary,nodata)
-    WriteAscFile(BasinBoundary, Boundary,ncols,nrows,geotrans,nodata)
+    WriteAscFile(BasinBoundary, tempBound,ncols,nrows,geotrans,nodata)
     
