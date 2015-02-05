@@ -123,7 +123,7 @@ def ExtractBasinBoundary(Basin,ShoulderPts,FlowDirFile,basinID,BasinBoundary,tem
     #    DangleNum,tempBound = EliminateDanglePoint(tempBound,nodata)
     #    GTPairNum,tempBound = simplifyBoundary(tempBound,nodata)
     #    print "DangleNum:%s" % DangleNum
-    tempBound = SnakeCreep(tempBound,shoulderpts,flowdir,nodata,20,geotrans,tempDir)
+    tempBound = SnakeCreep(tempBound,shoulderpts,flowdir,nodata,100,geotrans,tempDir)
 #    for i in range(nrows):
 #        for j in range(ncols):
 #            if tempBound[i][j] != nodata:
