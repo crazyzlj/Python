@@ -77,10 +77,8 @@ if __name__ == '__main__':
     ## I have tried to use the buffer boundary of rill at a given distance, but it is not desirable.
     #ShoulderLine.SnakeICC(RealrillFile1Final,47,BndPtsIdxFile,BndCellFile,SnakeICCFile)  
     ## Then, I go back to the original thought that use the corresponding watershed boundary.
-    #Basin = PreprocessDir + os.sep + "basin"
-    #Watershed = tempDir + os.sep + "watershed"
     watershedID = [[1,2,3,4,5,6,7,8,9,10,11,14],[12,13,15,17],[16,18,19]]
-    Subbasin.ExtractBasinBoundary(FinalWtdFile,FlowDirFile,watershedID,SnakeICCFile)
+    Subbasin.ExtractBasinBoundary(FinalWtdFile,ShoulderptsFinalFile,FlowDirFile,watershedID,SnakeICCFile,tempDir)
     #Shoulder = RillExtDir + os.sep + "Shoulder.asc"
     #ShoulderLine.RillShoulderSegement(BasinBoundary,FlowDirFile,ShoulderPts,Shoulder)
     #ShoulderLine.RillShoulder(Watershed,FlowDirFile,ShoulderPts,tempDir,Shoulder)

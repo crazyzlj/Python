@@ -5,6 +5,7 @@ import arcpy
 from arcpy import env
 
 from Util import *
+from ShoulderLine import *
 
 def GenerateStreamNetByTHR(DEMbuf,FlowDirFile,FlowAccFile,threshold,folder):
     print "Generating initial stream network according to threshold of flow accumulation..."
@@ -75,9 +76,10 @@ def basinIDIdx(basinID,value):
         return -9999
             
 
-def ExtractBasinBoundary(Basin,FlowDirFile,basinID,BasinBoundary):
+def ExtractBasinBoundary(Basin,ShoulderPts,FlowDirFile,basinID,BasinBoundary,tempDir):
     basin = ReadRaster(Basin).data
     flowdir = ReadRaster(FlowDirFile).data
+    shoulderpts = ReadRaster(ShoulderPts).data 
     nodata = ReadRaster(Basin).noDataValue
     #print nodata
     geotrans = ReadRaster(Basin).geotrans
@@ -101,8 +103,9 @@ def ExtractBasinBoundary(Basin,FlowDirFile,basinID,BasinBoundary):
                 if not (Boundary[i][j] in values):
                     values.append(Boundary[i][j])
     values = list(set(values))
-    #finalBound = numpy.ones((nrows,ncols))
-    #finalBound = finalBound * nodata
+    finalBound = numpy.ones((nrows,ncols))
+    finalBound = finalBound * nodata
+    finalbndcell = []
     #for value in values:
     tempBound = numpy.ones((nrows,ncols))
     tempBound = tempBound * nodata
@@ -110,10 +113,23 @@ def ExtractBasinBoundary(Basin,FlowDirFile,basinID,BasinBoundary):
         for j in range(ncols):
             if Boundary[i][j] == 1:
                 tempBound[i][j] = 1
-    num,tempBound = simplifyBoundary(tempBound,nodata)
-    print num
-    while num != 0:
-        num,tempBound = simplifyBoundary(tempBound,nodata)
+    
+    GTPairNum,tempBound = simplifyBoundary(tempBound,nodata,geotrans)
+    print "Greater than 2 near cells Num:%s" % GTPairNum
+    while GTPairNum != 0:
+        GTPairNum,tempBound = simplifyBoundary(tempBound,nodata,geotrans)
+    #WriteAscFile(r'E:\MasterBNU\RillMorphology\20150130\2Rill\SnakeICC0.asc', tempBound,ncols,nrows,geotrans,nodata)
+    #while DangleNum != 0 or GTPairNum != 0:
+    #    DangleNum,tempBound = EliminateDanglePoint(tempBound,nodata)
+    #    GTPairNum,tempBound = simplifyBoundary(tempBound,nodata)
+    #    print "DangleNum:%s" % DangleNum
+    tempBound = SnakeCreep(tempBound,shoulderpts,flowdir,nodata,20,geotrans,tempDir)
+#    for i in range(nrows):
+#        for j in range(ncols):
+#            if tempBound[i][j] != nodata:
+#                finalbndcell.append([i,j])
+#    for cell in finalbndcell:
+#        finalBound[cell[0]][cell[1]] = 1
 #    num,Boundary = simplifyBoundary(Boundary,nodata)
 #    print num
 #    while num != 0:

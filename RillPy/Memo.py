@@ -119,48 +119,56 @@ import math,copy
 #        f.write(str(elev))
 #    f.close()
 
-def isAdjacent(ptStd,ptEnd):
-    flag = 0
-    for i in [-1,0,1]:
-        for j in [-1,0,1]:
-            crow = ptStd[0]+i
-            ccol = ptStd[1]+j
-            if [crow,ccol] == ptEnd:
-                flag = 1
-                return True
-    if flag == 0:
-        return False
+#def isAdjacent(ptStd,ptEnd):
+#    flag = 0
+#    for i in [-1,0,1]:
+#        for j in [-1,0,1]:
+#            crow = ptStd[0]+i
+#            ccol = ptStd[1]+j
+#            if [crow,ccol] == ptEnd:
+#                flag = 1
+#                return True
+#    if flag == 0:
+#        return False
+#
+#def InterpLine(ptStd,ptEnd):
+#    Srow,Scol = ptStd
+#    Erow,Ecol = ptEnd
+#    Sr = min(Srow,Erow)
+#    Er = max(Srow,Erow)
+#    Sc = min(Scol,Ecol)
+#    Ec = max(Scol,Ecol)
+#    Idxs = []
+#    if isAdjacent(ptStd,ptEnd):
+#        return Idxs
+#    elif Srow == Erow:
+#        for i in range(Sc + 1,Ec):
+#            Idxs.append([Srow,i])
+#    elif Scol == Ecol:
+#        for i in range(Sr + 1,Er):
+#            Idxs.append([i,Scol])
+#    else:
+#        for i in range(Sc + 1,Ec):
+#            #crow = int(round((float(Erow-Srow)/float(Ecol-Scol))*(i - Scol)))
+#            crow = int(round(float(Erow-Srow)/float(Ecol-Scol)*(i - Scol)+Srow))
+#            Idxs.append([crow,i])
+#        for j in range(Sr + 1,Er):
+#            ccol = int(round(float(Ecol-Scol)/float(Erow-Srow)*(j - Srow) + Scol))
+#            Idxs.append([j,ccol])
+#    uniqueIdxs = []
+#    for idx in Idxs:
+#        if idx not in uniqueIdxs:
+#            uniqueIdxs.append(idx)
+#    uniqueIdxs.sort()
+#    return uniqueIdxs
+#idxs = InterpLine([86,93],[85,96])
+##idxs = list(set(idxs))
+#print idxs
 
-def InterpLine(ptStd,ptEnd):
-    Srow,Scol = ptStd
-    Erow,Ecol = ptEnd
-    Sr = min(Srow,Erow)
-    Er = max(Srow,Erow)
-    Sc = min(Scol,Ecol)
-    Ec = max(Scol,Ecol)
-    Idxs = []
-    if isAdjacent(ptStd,ptEnd):
-        return Idxs
-    elif Srow == Erow:
-        for i in range(Sc + 1,Ec):
-            Idxs.append([Srow,i])
-    elif Scol == Ecol:
-        for i in range(Sr + 1,Er):
-            Idxs.append([i,Scol])
-    else:
-        for i in range(Sc + 1,Ec):
-            #crow = int(round((float(Erow-Srow)/float(Ecol-Scol))*(i - Scol)))
-            crow = int(round(float(Erow-Srow)/float(Ecol-Scol)*(i - Scol)+Srow))
-            Idxs.append([crow,i])
-        for j in range(Sr + 1,Er):
-            ccol = int(round(float(Ecol-Scol)/float(Erow-Srow)*(j - Srow) + Scol))
-            Idxs.append([j,ccol])
-    uniqueIdxs = []
-    for idx in Idxs:
-        if idx not in uniqueIdxs:
-            uniqueIdxs.append(idx)
-    uniqueIdxs.sort()
-    return uniqueIdxs
-idxs = InterpLine([86,93],[85,96])
-#idxs = list(set(idxs))
-print idxs
+from Util import *
+
+raster = ReadRaster(r'E:\MasterBNU\RillMorphology\20150130\2Rill\SnakeICC1.asc').data
+nrows,ncols = raster.shape
+geotrans = ReadRaster(r'E:\MasterBNU\RillMorphology\20150130\2Rill\SnakeICC1.asc').geotrans
+raster = thin(raster,geotrans,r'E:\MasterBNU\RillMorphology\20150130\0Temp')
+WriteAscFile(r'E:\MasterBNU\RillMorphology\20150130\2Rill\SnakeICC11.asc', raster,ncols,nrows,geotrans,-9999) 

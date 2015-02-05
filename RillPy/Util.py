@@ -204,7 +204,9 @@ def GRID2ASC(GRID,ASC):
     temp = temp * -9999
     for i in range(nrows):
         for j in range(ncols):
-            if grid[i][j] != nodata:
+            if grid[i][j] == nodata or grid[i][j] == 0:
+                temp[i][j] = -9999
+            else:
                 temp[i][j] = grid[i][j]
     WriteAscFile(ASC, temp,ncols,nrows,geotrans,-9999.0)    
 def GetUniqueValues(RasterFile):
@@ -255,7 +257,7 @@ def isEdge(raster,row,col,nodata):
         else:
             return False
 
-def ExtractBoundary(raster,nodata):
+def ExtractBoundary(raster,nodata,geotrans):
     nrows,ncols = raster.shape
     Boundary = numpy.ones((nrows,ncols))
     Boundary = Boundary * -9999
@@ -263,10 +265,16 @@ def ExtractBoundary(raster,nodata):
         for j in range(ncols):
             if isEdge(raster,i,j,nodata):
                 Boundary[i][j] = 1
-    num,Boundary = simplifyBoundary(Boundary,nodata)
+    num,Boundary = simplifyBoundary(Boundary,nodata,geotrans)
     while num != 0:
-        num,Boundary = simplifyBoundary(Boundary,nodata)
+        num,Boundary = simplifyBoundary(Boundary,nodata,geotrans)
     return Boundary
+def getDir(fromPt,toPt):
+    di = toPt[0]-fromPt[0]
+    dj = toPt[1]-fromPt[1]
+    for key in DIR_ITEMS.keys():
+        if DIR_ITEMS[key] == (di,dj):
+            return DIR_VALUES.index(key)
 def EliminateDanglePoint(raster,nodata):
     nrows,ncols = raster.shape
     dangle = 0
@@ -274,26 +282,55 @@ def EliminateDanglePoint(raster,nodata):
         for j in range(ncols):
             if raster[i][j] != nodata:
                 temp = NearCells(raster,nodata,i,j)
-                if len(temp) in [0,1,2]:
+                curNum = len(temp)
+                
+                if curNum in [0,1,2]:
                     raster[i][j] = nodata
-                    #print i,j
                     dangle = dangle + 1
+                if curNum == 3:
+                    temp.remove([i,j])
+                    idx1 = getDir([i,j],temp[0])
+                    idx2 = getDir([i,j],temp[1])
+                    if abs(idx1-idx2)==1 or abs(idx1-idx2)==7:
+                        raster[i][j] = nodata
+                    dangle = dangle + 1
+               
     return (dangle,raster)
-def simplifyBoundary(raster,nodata):
+def thin(raster,geotrans,tempdir):
+    arcpy.gp.overwriteOutput = 1
+    arcpy.CheckOutExtension("spatial")
     nrows,ncols = raster.shape
-    DangleNum,raster = EliminateDanglePoint(raster,nodata)
-    print "DangleNum:%s" % DangleNum
-    while DangleNum != 0:
-        DangleNum,raster = EliminateDanglePoint(raster,nodata)
-        print "DangleNum:%s" % DangleNum
-    #SimRaster = numpy.copy(raster)
+    WriteAscFile(tempdir + os.sep + "tempBoundary.asc", raster,ncols,nrows,geotrans,-9999)
+    arcpy.ASCIIToRaster_conversion(tempdir + os.sep + "tempBoundary.asc", tempdir + os.sep + "tempBnd","INTEGER")
+    thinfile = arcpy.sa.Thin(tempdir + os.sep + "tempBnd","NODATA","","SHARP",geotrans[1])
+    thinfile.save(tempdir + os.sep + "tempBndThin")
+    GRID2ASC(tempdir + os.sep + "tempBndThin",tempdir + os.sep + "tempBndThin.asc")
+    return ReadRaster(tempdir + os.sep + "tempBndThin.asc").data
+    
+def simplifyBoundary(raster,nodata,geotrans):
+    nrows,ncols = raster.shape
     num = [0,0,0,0,0,0,0,0,0]
+    dangle,raster = EliminateDanglePoint(raster,nodata)
+    #WriteAscFile(r'E:\MasterBNU\RillMorphology\20150130\2Rill\SnakeICC4.asc', raster,ncols,nrows,geotrans,-9999)
+    dangleCount = 0
+    while dangle != 0 and dangleCount < 3:
+        dangle,raster = EliminateDanglePoint(raster,nodata)
+        dangleCount = dangleCount + 1 
     for i in range(nrows):
         for j in range(ncols):
             if raster[i][j] != nodata:
                 nearcell = NearCells(raster,nodata,i,j)
-                num[len(nearcell)-1] = num[len(nearcell)-1] + 1
-                if len(nearcell) == 4:
+                curNum = len(nearcell)
+                num[curNum-1] = num[curNum-1] + 1
+                if curNum in [0,1,2]:
+                    raster[i][j] = nodata
+                if curNum == 3:
+                    nearcell.remove([i,j])
+                    idx1 = getDir([i,j],nearcell[0])
+                    idx2 = getDir([i,j],nearcell[1])
+                    if abs(idx1-idx2)==1 or abs(idx1-idx2)==7:
+                        raster[i][j] = nodata
+                if curNum >= 4:
                     if ([i+1,j+1] in nearcell or [i-1,j+1] in nearcell) and [i,j+1] in nearcell:
                         raster[i][j+1] = nodata
                     elif ([i+1,j-1] in nearcell or [i-1,j-1] in nearcell) and [i,j-1] in nearcell:
@@ -302,59 +339,8 @@ def simplifyBoundary(raster,nodata):
                         raster[i-1][j] = nodata
                     elif ([i+1,j+1] in nearcell or [i+1,j-1] in nearcell) and [i+1,j] in nearcell:
                         raster[i+1][j] = nodata
+    #WriteAscFile(r'E:\MasterBNU\RillMorphology\20150130\2Rill\SnakeICC4.asc', raster,ncols,nrows,geotrans,-9999)
     print num
-#    num = [0,0,0,0,0,0,0,0,0]
-#    for i in reversed(range(nrows)):
-#        for j in range(ncols):
-#            if raster[i][j] != nodata:
-#                nearcell = NearCells(raster,nodata,i,j)
-#                num[len(nearcell)-1] = num[len(nearcell)-1] + 1
-#                if len(nearcell) == 4:
-#                    if ([i+1,j+1] in nearcell or [i-1,j+1] in nearcell) and [i,j+1] in nearcell:
-#                        raster[i][j+1] = nodata
-#                    elif ([i+1,j-1] in nearcell or [i-1,j-1] in nearcell) and [i,j-1] in nearcell:
-#                        raster[i][j-1] = nodata
-#                    elif ([i-1,j+1] in nearcell or [i-1,j-1] in nearcell) and [i-1,j] in nearcell:
-#                        raster[i-1][j] = nodata
-#                    elif ([i+1,j+1] in nearcell or [i+1,j-1] in nearcell) and [i+1,j] in nearcell:
-#                        raster[i+1][j] = nodata
-#    
-#    print num
-#    num = [0,0,0,0,0,0,0,0,0]
-#    for j in range(ncols):
-#        for i in range(nrows):
-#            if raster[i][j] != nodata:
-#                nearcell = NearCells(raster,nodata,i,j)
-#                num[len(nearcell)-1] = num[len(nearcell)-1] + 1
-#                if len(nearcell) == 4:
-#                    if ([i+1,j+1] in nearcell or [i-1,j+1] in nearcell) and [i,j+1] in nearcell:
-#                        raster[i][j+1] = nodata
-#                    elif ([i+1,j-1] in nearcell or [i-1,j-1] in nearcell) and [i,j-1] in nearcell:
-#                        raster[i][j-1] = nodata
-#                    elif ([i-1,j+1] in nearcell or [i-1,j-1] in nearcell) and [i-1,j] in nearcell:
-#                        raster[i-1][j] = nodata
-#                    elif ([i+1,j+1] in nearcell or [i+1,j-1] in nearcell) and [i+1,j] in nearcell:
-#                        raster[i+1][j] = nodata
-#    
-#    print num
-#    num = [0,0,0,0,0,0,0,0,0]
-#    for j in reversed(range(ncols)):
-#        for i in range(nrows):    
-#            if raster[i][j] != nodata:
-#                nearcell = NearCells(raster,nodata,i,j)
-#                num[len(nearcell)-1] = num[len(nearcell)-1] + 1
-#                if len(nearcell) == 4:
-#                    if ([i+1,j+1] in nearcell or [i-1,j+1] in nearcell) and [i,j+1] in nearcell:
-#                        raster[i][j+1] = nodata
-#                    elif ([i+1,j-1] in nearcell or [i-1,j-1] in nearcell) and [i,j-1] in nearcell:
-#                        raster[i][j-1] = nodata
-#                    elif ([i-1,j+1] in nearcell or [i-1,j-1] in nearcell) and [i-1,j] in nearcell:
-#                        raster[i-1][j] = nodata
-#                    elif ([i+1,j+1] in nearcell or [i+1,j-1] in nearcell) and [i+1,j] in nearcell:
-#                        raster[i+1][j] = nodata
-#    print num
-    
-    #return SimRaster
     return (num[3],raster)
 def isAdjacent(ptStd,ptEnd):
     flag = 0

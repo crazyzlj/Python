@@ -5,6 +5,7 @@ from Hillslope import *
 from Subbasin import *
 import os,sys
 
+
 def IdentifyRillShoulderPts(Aspect,Slope,ProfC,alpha,beta,ShoulderPts):
     aspect = ReadRaster(Aspect).data
     nrows,ncols = aspect.shape
@@ -84,9 +85,9 @@ def RillShoulderSegement(Boundary,FlowDir,ShoulderPts,ShoulderFile):
             if boundary[i][j] != nodata:
                 #print i,j
                 bndIdx.append([i,j])
+    
     iterate = 0
     changed = 0
-    
     tempBnd = []
     tempBnd.extend(bndIdx)
     pairPts = []
@@ -173,6 +174,96 @@ def RillShoulderSegement(Boundary,FlowDir,ShoulderPts,ShoulderFile):
 #    for sd in bndIdx:
 #        shoulder[sd[0]][sd[1]] = 1
 #    WriteAscFile(ShoulderFile, shoulder,ncols,nrows,geotrans,-9999)
+def SnakeCreep(boundary,shoulderpts,flowdir,nodata,MaxIterate,geotrans,tempdir):
+    iterate = 0
+    changed = 9999
+    nrows,ncols = boundary.shape
+    while iterate < MaxIterate or changed == 0:
+        bndIdx = []
+        for i in range(nrows):
+            for j in range(ncols):
+                if boundary[i][j] != nodata:
+                    #print i,j
+                    bndIdx.append([i,j])
+        changed = 0
+        tempBnd = []
+        tempBnd.extend(bndIdx)
+        pairPts = []
+        prev = []
+        currcell = tempBnd[0]
+        nextcell = []
+        while len(tempBnd) > 0:
+            nextcell = NearCells(boundary,nodata,currcell[0],currcell[1])
+            if nextcell != [] and currcell in nextcell:
+                nextcell.remove(currcell)
+            if nextcell != [] and prev != [] and prev in nextcell:
+                nextcell.remove(prev)
+            if nextcell == [] or nextcell == None:
+                if currcell in tempBnd:
+                    tempBnd.remove(currcell)
+                if prev in tempBnd:
+                    tempBnd.remove(prev)
+                prev = []
+                if len(tempBnd) > 0:
+                    currcell = tempBnd[0]
+                else:
+                    break
+                
+            elif len(nextcell) >= 1:
+                pairPts.append([currcell,nextcell[0]])
+                tempBnd.remove(nextcell[0])
+                boundary[nextcell[0][0]][nextcell[0][1]] = nodata
+                prev = currcell
+                currcell = nextcell[0]
+        #print pairPts
+        #print len(pairPts)
+        for pts in pairPts:
+            for pt in pts:
+                if shoulderpts[pt[0]][pt[1]] != nodata:
+                    tempBnd.append(pt)
+                else:
+                    row,col = downstream_index(flowdir[pt[0]][pt[1]], pt[0],pt[1])
+                    if row < 0 or row >= nrows or col < 0 or col >= ncols:
+                        tempBnd.append(pt)
+                    elif shoulderpts[row][col] != nodata:
+                        tempBnd.append(pt)
+                    else:
+                        tempBnd.append([row,col])
+                        pairPts[pairPts.index(pts)][pts.index(pt)] = [row,col]
+                        changed = changed + 1
+        #print pairPts
+        for pts in pairPts:
+            #print InterpLine(pts[0],pts[1])
+            tempBnd.extend(InterpLine(pts[0],pts[1]))
+        uniqueIdxs = []
+        for idx in tempBnd:
+            if idx not in uniqueIdxs:
+                uniqueIdxs.append(idx)
+        tempBnd = []
+        tempBnd.extend(uniqueIdxs)
+
+        for pt in tempBnd:
+            row,col = pt
+            if row >= 0 and row < nrows and col >= 0 and col < ncols:
+                boundary[row][col] = 1
+            else:
+                tempBnd.remove(pt)
+        #print tempBnd
+        #WriteAscFile(r'E:\MasterBNU\RillMorphology\20150130\2Rill\SnakeICC0.asc', boundary,ncols,nrows,geotrans,-9999) 
+        ## to avoid boundary grid break, first use thin tool of ArcGIS
+        boundary = thin(boundary,geotrans,tempdir)
+        ## end declaration
+        #WriteAscFile(r'E:\MasterBNU\RillMorphology\20150130\2Rill\SnakeICC1.asc', boundary,ncols,nrows,geotrans,-9999) 
+        num,boundary = simplifyBoundary(boundary,nodata,geotrans)
+        #WriteAscFile(r'E:\MasterBNU\RillMorphology\20150130\2Rill\SnakeICC2.asc', boundary,ncols,nrows,geotrans,-9999)
+        print num
+        count = 0
+        while num != 0 and count < 3:
+            num,boundary = simplifyBoundary(boundary,nodata,geotrans)
+            count = count + 1
+        iterate = iterate + 1
+        #WriteAscFile(r'E:\MasterBNU\RillMorphology\20150130\2Rill\SnakeICC3.asc', boundary,ncols,nrows,geotrans,-9999)
+    return boundary
 
 def RillShoulder(BasinFile,FlowDir,ShoulderPts,tempDir,ShoulderFile):
     UniqueBasinId = GetUniqueValues(BasinFile)
