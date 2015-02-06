@@ -115,7 +115,7 @@ def ExtractBasinBoundary(Basin,ShoulderPts,FlowDirFile,basinID,BasinBoundary,tem
                 tempBound[i][j] = 1
     
     GTPairNum,tempBound = simplifyBoundary(tempBound,nodata,geotrans)
-    print "Greater than 2 near cells Num:%s" % GTPairNum
+    #print "Greater than 2 near cells Num:%s" % GTPairNum
     while GTPairNum != 0:
         GTPairNum,tempBound = simplifyBoundary(tempBound,nodata,geotrans)
     #WriteAscFile(r'E:\MasterBNU\RillMorphology\20150130\2Rill\SnakeICC0.asc', tempBound,ncols,nrows,geotrans,nodata)
@@ -123,7 +123,7 @@ def ExtractBasinBoundary(Basin,ShoulderPts,FlowDirFile,basinID,BasinBoundary,tem
     #    DangleNum,tempBound = EliminateDanglePoint(tempBound,nodata)
     #    GTPairNum,tempBound = simplifyBoundary(tempBound,nodata)
     #    print "DangleNum:%s" % DangleNum
-    tempBound = SnakeCreep(tempBound,shoulderpts,flowdir,nodata,100,geotrans,tempDir)
+    tempBound = SnakeCreep2(tempBound,shoulderpts,flowdir,nodata,500,geotrans,tempDir)
 #    for i in range(nrows):
 #        for j in range(ncols):
 #            if tempBound[i][j] != nodata:

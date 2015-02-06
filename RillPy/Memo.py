@@ -119,56 +119,90 @@ import math,copy
 #        f.write(str(elev))
 #    f.close()
 
-#def isAdjacent(ptStd,ptEnd):
-#    flag = 0
-#    for i in [-1,0,1]:
-#        for j in [-1,0,1]:
-#            crow = ptStd[0]+i
-#            ccol = ptStd[1]+j
-#            if [crow,ccol] == ptEnd:
-#                flag = 1
-#                return True
-#    if flag == 0:
-#        return False
+def isAdjacent(ptStd,ptEnd):
+    flag = 0
+    for i in [-1,0,1]:
+        for j in [-1,0,1]:
+            crow = ptStd[0]+i
+            ccol = ptStd[1]+j
+            if [crow,ccol] == ptEnd:
+                flag = 1
+                return True
+    if flag == 0:
+        return False
+def MakePairs(fstpt,interpPt):
+    tempseq = copy.copy(interpPt)
+    print tempseq
+    pairPts = []
+    prev = []
+    currcell = fstpt
+    while len(tempseq) > 0:
+        nextcell = []
+        for i in [-1,0,1]:
+            for j in [-1,0,1]:
+                di = currcell[0] + i
+                dj = currcell[1] + j
+                if [di,dj] != currcell and [di,dj] in tempseq:
+                    nextcell.append([di,dj])
+        if nextcell != [] and prev != [] and prev in nextcell:
+            nextcell.remove(prev)
+        if nextcell == [] or nextcell == None:
+            if currcell in tempseq:
+                tempseq.remove(currcell)
+            if prev in tempseq:
+                tempseq.remove(prev)
+            prev = []
+            if len(tempseq) > 0:
+                currcell = tempseq[0]
+            else:
+                break
+        elif len(nextcell) >= 1:
+            pairPts.append([currcell,nextcell[0]])
+            prev = currcell
+            currcell = nextcell[0]
+    return pairPts
+
+def InterpLine(ptStd,ptEnd):
+    Srow,Scol = ptStd
+    Erow,Ecol = ptEnd
+    Sr = min(Srow,Erow)
+    Er = max(Srow,Erow)
+    Sc = min(Scol,Ecol)
+    Ec = max(Scol,Ecol)
+    Idxs = []
+    if isAdjacent(ptStd,ptEnd):
+        return Idxs
+    elif Srow == Erow:
+        for i in range(Sc + 1,Ec):
+            Idxs.append([Srow,i])
+    elif Scol == Ecol:
+        for i in range(Sr + 1,Er):
+            Idxs.append([i,Scol])
+    else:
+        for i in range(Sc + 1,Ec):
+            #crow = int(round((float(Erow-Srow)/float(Ecol-Scol))*(i - Scol)))
+            crow = int(round(float(Erow-Srow)/float(Ecol-Scol)*(i - Scol)+Srow))
+            Idxs.append([crow,i])
+        for j in range(Sr + 1,Er):
+            ccol = int(round(float(Ecol-Scol)/float(Erow-Srow)*(j - Srow) + Scol))
+            Idxs.append([j,ccol])
+    uniqueIdxs = []
+    for idx in Idxs:
+        if idx not in uniqueIdxs:
+            uniqueIdxs.append(idx)
+    uniqueIdxs.sort()
+    return uniqueIdxs
+idxs = InterpLine([3,3],[3,6])
+idxs.append([3,6])
+temppair = MakePairs([3,3],idxs)
+
+#idxs = list(set(idxs))
+print temppair
+
+#from Util import *
 #
-#def InterpLine(ptStd,ptEnd):
-#    Srow,Scol = ptStd
-#    Erow,Ecol = ptEnd
-#    Sr = min(Srow,Erow)
-#    Er = max(Srow,Erow)
-#    Sc = min(Scol,Ecol)
-#    Ec = max(Scol,Ecol)
-#    Idxs = []
-#    if isAdjacent(ptStd,ptEnd):
-#        return Idxs
-#    elif Srow == Erow:
-#        for i in range(Sc + 1,Ec):
-#            Idxs.append([Srow,i])
-#    elif Scol == Ecol:
-#        for i in range(Sr + 1,Er):
-#            Idxs.append([i,Scol])
-#    else:
-#        for i in range(Sc + 1,Ec):
-#            #crow = int(round((float(Erow-Srow)/float(Ecol-Scol))*(i - Scol)))
-#            crow = int(round(float(Erow-Srow)/float(Ecol-Scol)*(i - Scol)+Srow))
-#            Idxs.append([crow,i])
-#        for j in range(Sr + 1,Er):
-#            ccol = int(round(float(Ecol-Scol)/float(Erow-Srow)*(j - Srow) + Scol))
-#            Idxs.append([j,ccol])
-#    uniqueIdxs = []
-#    for idx in Idxs:
-#        if idx not in uniqueIdxs:
-#            uniqueIdxs.append(idx)
-#    uniqueIdxs.sort()
-#    return uniqueIdxs
-#idxs = InterpLine([86,93],[85,96])
-##idxs = list(set(idxs))
-#print idxs
-
-from Util import *
-
-raster = ReadRaster(r'E:\MasterBNU\RillMorphology\20150130\2Rill\SnakeICC1.asc').data
-nrows,ncols = raster.shape
-geotrans = ReadRaster(r'E:\MasterBNU\RillMorphology\20150130\2Rill\SnakeICC1.asc').geotrans
-raster = thin(raster,geotrans,r'E:\MasterBNU\RillMorphology\20150130\0Temp')
-WriteAscFile(r'E:\MasterBNU\RillMorphology\20150130\2Rill\SnakeICC11.asc', raster,ncols,nrows,geotrans,-9999) 
+#raster = ReadRaster(r'E:\MasterBNU\RillMorphology\20150130\2Rill\SnakeICC1.asc').data
+#nrows,ncols = raster.shape
+#geotrans = ReadRaster(r'E:\MasterBNU\RillMorphology\20150130\2Rill\SnakeICC1.asc').geotrans
+#raster = thin(raster,geotrans,r'E:\MasterBNU\RillMorphology\20150130\0Temp')
+#WriteAscFile(r'E:\MasterBNU\RillMorphology\20150130\2Rill\SnakeICC11.asc', raster,ncols,nrows,geotrans,-9999) 

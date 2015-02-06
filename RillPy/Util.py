@@ -340,7 +340,7 @@ def simplifyBoundary(raster,nodata,geotrans):
                     elif ([i+1,j+1] in nearcell or [i+1,j-1] in nearcell) and [i+1,j] in nearcell:
                         raster[i+1][j] = nodata
     #WriteAscFile(r'E:\MasterBNU\RillMorphology\20150130\2Rill\SnakeICC4.asc', raster,ncols,nrows,geotrans,-9999)
-    print num
+    #print num
     return (num[3],raster)
 def isAdjacent(ptStd,ptEnd):
     flag = 0
