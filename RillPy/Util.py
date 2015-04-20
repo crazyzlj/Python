@@ -99,7 +99,6 @@ def WriteGTiffFile(filename, nRows, nCols, data, geotransform, srs, noDataValue,
     ds.SetProjection(srs.ExportToWkt())
     ds.GetRasterBand(1).SetNoDataValue(noDataValue)
     ds.GetRasterBand(1).WriteArray(data)
-    
     ds = None
 
 def WriteGTiffFileByMask(filename, data, mask, gdalType):
@@ -391,7 +390,19 @@ def InterpLine(ptStd,ptEnd):
 
 ## DEM Preprocessing  ##
 def UtilHydroFiles(DEMsrc, folder):
-    print "Calculating fundamental hydrological parameters from DEM..."
+    DEMbuf = folder + os.sep + "DEMbuf.tif"
+    DEMfil = folder + os.sep + "DEMfil.tif"
+    SlopeFile = folder + os.sep + "slope.tif"
+    SOSFile = folder + os.sep + "sos.tif"
+    AspectFile = folder + os.sep + "aspect.tif"
+    FlowDirFile = folder + os.sep + "flowdir.tif"
+    FlowAccFile = folder + os.sep + "flowacc.tif"
+    CurvFile = folder + os.sep + "curv.tif"
+    CurvProfFile = folder + os.sep + "curvprof.tif"
+    CurvPlanFile = folder + os.sep + "curvplan.tif"
+    
+    
+    print "Calculating fundamental hydrological parameters from DEM using Arcpy and TauDEM..."
     env.workspace = folder
     arcpy.gp.overwriteOutput = 1
     arcpy.CheckOutExtension("Spatial")
@@ -405,42 +416,34 @@ def UtilHydroFiles(DEMsrc, folder):
     env.extent = extent_buf
     env.cellSize = cellsize
     Exec = "Con(IsNull(\"%s\"),FocalStatistics(\"%s\", NbrRectangle(3, 3, \"CELL\"), \"MEAN\", \"DATA\"),\"%s\")" % (DEMsrc, DEMsrc, DEMsrc)
-    arcpy.gp.RasterCalculator_sa(Exec, "DEMbuf")
+    arcpy.gp.RasterCalculator_sa(Exec, DEMbuf)
     print "   --- fill depression..."
     env.extent = dem_des.Extent
-    DEMfil = arcpy.sa.Fill(DEMsrc)
-    DEMfil.save("DEMfil")
-    print "   --- calculating aspect, slope, curvature, flow direction, flow accumulation, basin..."
-    Aspect = arcpy.sa.Aspect("DEMfil")
-    Slope = arcpy.sa.Slope("DEMfil","DEGREE")
+    demfil = arcpy.sa.Fill(DEMsrc)
+    demfil.save(DEMfil)
+    print "   --- calculating aspect, slope, curvature, flow direction, flow accumulation..."
+    Aspect = arcpy.sa.Aspect(DEMfil)
+    Slope = arcpy.sa.Slope(DEMfil,"DEGREE")
     
-    Flowdir = arcpy.sa.FlowDirection("DEMfil","NORMAL")
-    Curvature = arcpy.sa.Curvature("DEMfil","","curvprof","curvplan")
-    Curvature.save("curv")
-    Slope.save("slope")
-    Aspect.save("aspect")
-    Flowdir.save("flowdir")
-    SOS = arcpy.sa.Slope("slope","DEGREE")
-    SOS.save("sos")
-    FlowLen = arcpy.sa.FlowLength("flowdir","DOWNSTREAM")
-    FlowLen.save("flowlen")
-    FlowAcc = arcpy.sa.FlowAccumulation("flowdir","","FLOAT")
-    FlowAcc.save("flowacc")
-    Basin = arcpy.sa.Basin("flowdir")
-    Basin.save("basin")
-    arcpy.RasterToPolygon_conversion("basin","basin.shp","NO_SIMPLIFY","VALUE")
+    Flowdir = arcpy.sa.FlowDirection(DEMfil,"NORMAL")
+    Curvature = arcpy.sa.Curvature(DEMfil,"",CurvProfFile,CurvPlanFile)
+    Curvature.save(CurvFile)
+    Slope.save(SlopeFile)
+    Aspect.save(AspectFile)
+    Flowdir.save(FlowDirFile)
+    SOS = arcpy.sa.Slope(SlopeFile,"DEGREE")
+    SOS.save(SOSFile)
+    #FlowLen = arcpy.sa.FlowLength(FlowDirFile,"DOWNSTREAM")
+    #FlowLen.save("flowlen")
+    FlowAcc = arcpy.sa.FlowAccumulation(FlowDirFile,"","FLOAT")
+    FlowAcc.save(FlowAccFile)
+    #Basin = arcpy.sa.Basin(FlowDirFile)
+    #Basin.save("basin")
+    #arcpy.RasterToPolygon_conversion("basin","basin.shp","NO_SIMPLIFY","VALUE")
     
-    DEMbuf = folder + os.sep + "DEMbuf"
-    DEMfil = folder + os.sep + "DEMfil"
-    SlopeFile = folder + os.sep + "slope"
-    SOSFile = folder + os.sep + "sos"
-    AspectFile = folder + os.sep + "aspect"
-    FlowDirFile = folder + os.sep + "flowdir"
-    FlowAccFile = folder + os.sep + "flowacc"
-    CurvProfFile = folder + os.sep + "curvprof"
-    CurvPlanFile = folder + os.sep + "curvplan"
     
-    return (DEMbuf,DEMfil,SlopeFile,SOSFile,AspectFile,FlowDirFile,FlowAccFile,CurvProfFile,CurvPlanFile)
+    
+    return (DEMbuf,DEMfil,SlopeFile,SOSFile,AspectFile,FlowDirFile,FlowAccFile,CurvFile,CurvProfFile,CurvPlanFile)
 
 ## End DEM Preprocessing ##
 
