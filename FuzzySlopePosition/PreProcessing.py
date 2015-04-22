@@ -126,6 +126,3 @@ def PreProcessing(model):
     logStatus.write("Time consuming: %.1f min.\n" % cost)
     logStatus.flush()
     logStatus.close()
-        
-    
-    

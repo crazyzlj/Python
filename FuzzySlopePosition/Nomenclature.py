@@ -76,27 +76,27 @@ RPI = ParamDir + os.sep + 'RPI.tif'
 
 ####   Stage 2: Selection of Typical Locations  ####
 
-RdgTyp0 = TypLocDir + os.sep + "RdgTyp.tif"
-ShdTyp0 = TypLocDir + os.sep + "ShdTyp.tif"
-BksTyp0 = TypLocDir + os.sep + "BksTyp.tif"
-FtsTyp0 = TypLocDir + os.sep + "FtsTyp.tif"
-VlyTyp0 = TypLocDir + os.sep + "VlyTyp.tif"
+RdgExtConfig = TypLocDir + os.sep + "RdgExtConfig.dat"
+ShdExtConfig = TypLocDir + os.sep + "ShdExtConfig.dat"
+BksExtConfig = TypLocDir + os.sep + "BksExtConfig.dat"
+FtsExtConfig = TypLocDir + os.sep + "FtsExtConfig.dat"
+VlyExtConfig = TypLocDir + os.sep + "VlyExtConfig.dat"
 
-RdgTyp = TypLocDir + os.sep + "RdgTyp1.tif"
-ShdTyp = TypLocDir + os.sep + "ShdTyp1.tif"
-BksTyp = TypLocDir + os.sep + "BksTyp1.tif"
-FtsTyp = TypLocDir + os.sep + "FtsTyp1.tif"
-VlyTyp = TypLocDir + os.sep + "VlyTyp1.tif"
+RdgTyp = TypLocDir + os.sep + "RdgTyp.tif"
+ShdTyp = TypLocDir + os.sep + "ShdTyp.tif"
+BksTyp = TypLocDir + os.sep + "BksTyp.tif"
+FtsTyp = TypLocDir + os.sep + "FtsTyp.tif"
+VlyTyp = TypLocDir + os.sep + "VlyTyp.tif"
 
 
 
 ####   Stage 3: Fuzzy slope position inference  ####
 
-RdgConfig = TypLocDir + os.sep + "RdgConfig.dat"
-ShdConfig = TypLocDir + os.sep + "ShdConfig.dat"
-BksConfig = TypLocDir + os.sep + "BksConfig.dat"
-FtsConfig = TypLocDir + os.sep + "FtsConfig.dat"
-VlyConfig = TypLocDir + os.sep + "VlyConfig.dat"
+RdgInfConfig = TypLocDir + os.sep + "RdgInfConfig.dat"
+ShdInfConfig = TypLocDir + os.sep + "ShdInfConfig.dat"
+BksInfConfig = TypLocDir + os.sep + "BksInfConfig.dat"
+FtsInfConfig = TypLocDir + os.sep + "FtsInfConfig.dat"
+VlyInfConfig = TypLocDir + os.sep + "VlyInfConfig.dat"
 
 RdgInf = FSPDir + os.sep + "RdgInf.tif"
 ShdInf = FSPDir + os.sep + "ShdInf.tif"
@@ -104,20 +104,7 @@ BksInf = FSPDir + os.sep + "BksInf.tif"
 FtsInf = FSPDir + os.sep + "FtsInf.tif"
 VlyInf = FSPDir + os.sep + "VlyInf.tif"
 
-RdgTag = 1
-ShdTag = 1
-BksTag = 1
-FtsTag = 1
-VlyTag = 1
-# Default	w1	r1	k1	w2	r2	k2
-# B         6	2	0.5	6	2	0.5
-# S         6	2	0.5	1	0	1
-# Z         1	0	1	6	2	0.5
-RdgInferenceInfo = [[RPI,'S',0.04,2,0.5,1,0,1],[ProfC_mask,'Z',1,0,1,4.72,2,0.5],[HorizC_mask,'Z',1,0,1,4.69,2,0.5],[Slope,'B',0.18,2,0.5,0.18,2,0.5]]
-ShdInferenceInfo = [[RPI,'B',0.1,2,0.5,0.1,2,0.5],[ProfC_mask,'B',3.41,2,0.5,3.41,2,0.5],[HorizC_mask,'B',3.4,2,0.5,3.4,2,0.5],[Slope,'B',0.18,2,0.5,0.18,2,0.5]]
-BksInferenceInfo = [[RPI,'B',0.2,2,0.5,0.2,2,0.5],[ProfC_mask,'B',2.93,2,0.5,2.93,2,0.5],[HorizC_mask,'B',3.49,2,0.5,3.49,2,0.5]]
-FtsInferenceInfo = [[RPI,'B',0.2,2,0.5,0.2,2,0.5],[ProfC_mask,'S',3.71,2,0.5,1,0,1],[HorizC_mask,'S',2.89,2,0.5,1,0,1],[Slope,'Z',1,0,1,0.176,2,0.5]]
-VlyInferenceInfo = [[RPI,'Z',1,0,1,0.1,2,0.5],[ProfC_mask,'S',4.12,2,0.5,1,0,1],[HorizC_mask,'S',4.47,2,0.5,1,0,1],[Slope,'Z',1,0,1,0.087,2,0.5]]
+
 
 HardenSlpPos = FSPDir + os.sep + "HardenSlpPos.tif"
 MaxSimilarity = FSPDir + os.sep + "MaxSimilarity.tif"

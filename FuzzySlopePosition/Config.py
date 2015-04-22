@@ -49,14 +49,35 @@ DinfUpMethod = 'Surface'                                 ## same as DinfDownMeth
 
 ## Stage 2: Selection of Typical Locations
 
-
-
-
+RdgTag = 1
+ShdTag = 1
+BksTag = 1
+FtsTag = 1
+VlyTag = 1
+## default RPI value range for Ridge, Shoulder, Back, Foot and valley.
+AutoTypLocExtraction = True                              ## when AutoTypLocExtraction is Ture, the program will use RPIrange only.
+RdgExtractionInfo = [[RPI,0.99,1.0],[ProfC_mask,0.0,0.0],[HorizC_mask,0.0,0.0],[Slope,0.0,0.0]]                                                    
+ShdExtractionInfo = [[RPI,0.8,0.95],[ProfC_mask,0.0,0.0],[HorizC_mask,0.0,0.0],[Slope,0.0,0.0]]
+BksExtractionInfo = [[RPI,0.5,0.7],[ProfC_mask,0.0,0.0],[HorizC_mask,0.0,0.0],[Slope,0.0,0.0]]
+FtsExtractionInfo = [[RPI,0.2,0.3],[ProfC_mask,0.0,0.0],[HorizC_mask,0.0,0.0],[Slope,0.0,0.0]]
+VlyExtractionInfo = [[RPI,0.0,0.1],[ProfC_mask,0.0,0.0],[HorizC_mask,0.0,0.0],[Slope,0.0,0.0]]
 
 ## Stage 3: Fuzzy slope position inference
-CalSecHardSlpPos = True                                ## calculate second harden slope position or not
-CalSPSI = True                                         ## calculate SPSI (Slope Position Sequence Index) or not, Be Caution, only when CalSecHardSlpPos is True, CalSPSI can be True
-SPSImethod = 1                                       ## only when CalSPSI is True, the SPSImethod would be used. It can be 1,2,3
+AssignedInfParams = False
+# Default	w1	r1	k1	w2	r2	k2
+# B         6	2	0.5	6	2	0.5
+# S         6	2	0.5	1	0	1
+# Z         1	0	1	6	2	0.5
+
+RdgInferenceInfo = [[RPI,'S',0.04,2,0.5,1,0,1],[ProfC_mask,'Z',1,0,1,4.72,2,0.5],[HorizC_mask,'Z',1,0,1,4.69,2,0.5],[Slope,'B',0.18,2,0.5,0.18,2,0.5]]
+ShdInferenceInfo = [[RPI,'B',0.1,2,0.5,0.1,2,0.5],[ProfC_mask,'B',3.41,2,0.5,3.41,2,0.5],[HorizC_mask,'B',3.4,2,0.5,3.4,2,0.5],[Slope,'B',0.18,2,0.5,0.18,2,0.5]]
+BksInferenceInfo = [[RPI,'B',0.2,2,0.5,0.2,2,0.5],[ProfC_mask,'B',2.93,2,0.5,2.93,2,0.5],[HorizC_mask,'B',3.49,2,0.5,3.49,2,0.5]]
+FtsInferenceInfo = [[RPI,'B',0.2,2,0.5,0.2,2,0.5],[ProfC_mask,'S',3.71,2,0.5,1,0,1],[HorizC_mask,'S',2.89,2,0.5,1,0,1],[Slope,'Z',1,0,1,0.176,2,0.5]]
+VlyInferenceInfo = [[RPI,'Z',1,0,1,0.1,2,0.5],[ProfC_mask,'S',4.12,2,0.5,1,0,1],[HorizC_mask,'S',4.47,2,0.5,1,0,1],[Slope,'Z',1,0,1,0.087,2,0.5]]
+
+CalSecHardSlpPos = True                                 ## calculate second harden slope position or not
+CalSPSI = True                                          ## calculate SPSI (Slope Position Sequence Index) or not, Be Caution, only when CalSecHardSlpPos is True, CalSPSI can be True
+SPSImethod = 1                                          ## only when CalSPSI is True, the SPSImethod would be used. It can be 1,2,3
 
 DistanceExponentForIDW = 8                              ## the default is 8
 

@@ -19,11 +19,6 @@ if __name__ == '__main__':
     ## Stage 1: Preprocessing from DEMsrc
     #PreProcessing(FlowModel)
     ## Stage 2: Selection of Typical Locations
-    #SelectTypLoc()
+    SelectTypLoc()
     ## Stage 3: Fuzzy slope position inference
-#    TIFF2GeoTIFF(RdgTyp0,RdgTyp)
-#    TIFF2GeoTIFF(ShdTyp0,ShdTyp)
-#    TIFF2GeoTIFF(BksTyp0,BksTyp)
-#    TIFF2GeoTIFF(FtsTyp0,FtsTyp)
-#    TIFF2GeoTIFF(VlyTyp0,VlyTyp)
-    FuzzySlpPosInference()
+    #FuzzySlpPosInference()
