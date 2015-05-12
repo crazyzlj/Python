@@ -36,7 +36,7 @@ def pitremove(inZfile,inputProc,outFile, exeDir=None):
     else:
         cmd = 'mpiexec -n ' + str(inputProc) + ' ' + exeDir +'\\pitremove -z ' + '"' + inZfile + '"' + ' -fel ' + '"' + outFile + '"'
     print "Command Line: "+cmd
-    os.system(cmd)
+    ##os.system(cmd)
     process=subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
     for line in process.stdout.readlines():
         print line
@@ -54,7 +54,7 @@ def D8FlowDir(fel,inputProc,p,sd8, exeDir=None):
     else:
         cmd = 'mpiexec -n ' + str(inputProc) + ' ' + exeDir +'\\D8FlowDir -fel ' + '"' + fel + '"' + ' -p ' + '"' + p + '"' + ' -sd8 ' + '"' + sd8 + '"'
     print "Command Line: "+cmd
-    os.system(cmd)
+    ##os.system(cmd)
     process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
     for line in process.stdout.readlines():
         print line
@@ -71,7 +71,7 @@ def DinfFlowDir(fel,inputProc,ang,slp, exeDir=None):
     else:
         cmd = 'mpiexec -n ' + str(inputProc) + ' ' + exeDir +'\\DinfFlowDir -fel ' + '"' + fel + '"' + ' -ang ' + '"' + ang + '"' + ' -slp ' + '"' + slp + '"'
     print "Command Line: "+cmd
-    os.system(cmd)
+    #os.system(cmd)
     process=subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
     for line in process.stdout.readlines():
         print line
@@ -98,7 +98,7 @@ def AreaD8(p,Shapefile,weightgrid,edgecontamination,inputProc,ad8, exeDir=None):
     if edgecontamination == 'false':
         cmd = cmd + ' -nc '
     print "Command Line: "+cmd
-    os.system(cmd)
+    #os.system(cmd)
     process=subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
     for line in process.stdout.readlines():
         print line
@@ -125,7 +125,7 @@ def AreaDinf(ang,shapefile,weightgrid,edgecontamination,inputProc,sca, exeDir=No
     if edgecontamination == 'false':
         cmd = cmd + ' -nc '
     print "Command Line: "+cmd
-    os.system(cmd)
+    #os.system(cmd)
     process=subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
     for line in process.stdout.readlines():
         print line
@@ -153,7 +153,7 @@ def GridNet(p,inputProc,shapefile,maskgrid,maskthreshold,gord,plen,tlen, exeDir=
     if os.path.exists(maskgrid):
         cmd = cmd + ' -mask ' + '"' + maskgrid + '"' + ' -thresh ' + maskthreshold
     print "Command Line: "+cmd
-    os.system(cmd)
+    #os.system(cmd)
     process=subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
     for line in process.stdout.readlines():
         print line
@@ -184,7 +184,7 @@ def DinfAvalanche(fel,ang,ass,propthresh,alphthresh,pathdistancecode,inputProc,r
     if pathdistance == 'Straight Line':
         cmd = cmd + ' -direct '
     print "Command Line: "+cmd
-    os.system(cmd)
+    #os.system(cmd)
     process=subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
     for line in process.stdout.readlines():
         print line
@@ -209,7 +209,7 @@ def DinfConcLimAccum(ang,wg,dg,dm,shapefile,concthresh,edgecontamination,inputPr
     else:
         cmd = 'mpiexec -n ' + str(inputProc) + ' ' + exeDir +'\\AreaDinf -ang ' + '"' + ang + '"' + ' -sca ' + '"' + q + '"' + ' -wg ' + '"' + wg + '"'
     print "Command Line: "+cmd
-    os.system(cmd)
+    #os.system(cmd)
     process=subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
     for line in process.stdout.readlines():
         print line
@@ -226,7 +226,7 @@ def DinfConcLimAccum(ang,wg,dg,dm,shapefile,concthresh,edgecontamination,inputPr
         cmd = cmd + ' -nc '
 
     print "Command Line: "+cmd
-    os.system(cmd)
+    #os.system(cmd)
     process=subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
     for line in process.stdout.readlines():
         print line
@@ -255,7 +255,7 @@ def DinfDecayAccum(ang,dm,wg,shapefile,edgecontamination,inputProc,dsca, exeDir=
     if edgecontamination == 'false':
         cmd = cmd + ' -nc '
     print "Command Line: "+cmd
-    os.system(cmd)
+    #os.system(cmd)
     process=subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
     for line in process.stdout.readlines():
         print line
@@ -299,7 +299,7 @@ def DinfDistDown(ang,fel,src,statisticalmethod,distancemethod,edgecontamination,
         cmd = cmd + ' -nc '
 
     print "Command Line: "+cmd
-    os.system(cmd)
+    #os.system(cmd)
     process=subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
     for line in process.stdout.readlines():
         print line
@@ -340,7 +340,7 @@ def DinfDistUp(ang,fel,slp,propthresh,statisticalmethod,distancemethod,edgeconta
         cmd = cmd + ' -nc '
 
     print "Command Line: "+cmd
-    os.system(cmd)
+    #os.system(cmd)
     process=subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
     for line in process.stdout.readlines():
         print line
@@ -360,7 +360,7 @@ def DinfRevAccum(ang,dm,inputProc,racc,dmax, exeDir=None):
         cmd = 'mpiexec -n ' + str(inputProc) + ' ' + exeDir +'\\DinfRevAccum -ang ' + '"' + ang + '"' + ' -wg ' + '"' + dm + '"' + ' -racc ' + '"' + racc + '"' + ' -dmax ' + '"' + dmax + '"'
     
     print "Command Line: "+cmd
-    os.system(cmd)
+    #os.system(cmd)
     process=subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
     for line in process.stdout.readlines():
         print line
@@ -394,7 +394,7 @@ def DinfTransLimAccum(ang,tsup,tc,cs,shapefile,edgecontamination,inputProc,tla,t
         cmd = cmd + ' -nc '
 
     print "Command Line: "+cmd
-    os.system(cmd)
+    #os.system(cmd)
     process=subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
     for line in process.stdout.readlines():
         print line
@@ -411,7 +411,7 @@ def DinfUpDependence(ang,dg,inputProc,dep, exeDir=None):
     else:
         cmd = 'mpiexec -n ' + str(inputProc) + ' ' + exeDir +'\\DinfUpDependence -ang ' + '"' + ang + '"' + ' -dg ' + '"' + dg + '"' + ' -dep ' + '"' + dep + '"'
     print "Command Line: "+cmd
-    os.system(cmd)
+    #os.system(cmd)
     process=subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
     for line in process.stdout.readlines():
         print line
@@ -431,7 +431,7 @@ def D8HDistToStrm(p,src,thresh,inputProc,dist, exeDir=None):
         cmd = 'mpiexec -n ' + str(inputProc) + ' ' + exeDir +'\\D8HDistToStrm -p ' + '"' + p + '"' + ' -src ' + '"' + src + '"' + ' -dist ' + '"' + dist + '"' + ' -thresh ' + str(thresh)
     
     print "Command Line: "+cmd
-    os.system(cmd)
+    #os.system(cmd)
     process=subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
     for line in process.stdout.readlines():
         print line
@@ -451,7 +451,7 @@ def SlopeAveDown(p,fel,distance,inputProc,slpd, exeDir=None):
         cmd = 'mpiexec -n ' + str(inputProc) + ' ' + exeDir +'\\SlopeAveDown -p ' + '"' + p + '"' + ' -fel ' + '"' + fel + '"' + ' -slpd ' + '"' + slpd + '"' + ' -dn ' + str(distance)
     
     print "Command Line: "+cmd
-    os.system(cmd)
+    #os.system(cmd)
     process=subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
     for line in process.stdout.readlines():
         print line
@@ -469,7 +469,7 @@ def SlopeAreaRatio(slp,sca,inputProc,sar, exeDir=None):
         cmd = 'mpiexec -n ' + str(inputProc) + ' ' + exeDir +'\\SlopeAreaRatio -slp ' + '"' + slp + '"' + ' -sca ' + '"' + sca + '"' + ' -sar ' + '"' + sar + '"'
     
     print "Command Line: "+cmd
-    os.system(cmd)
+    #os.system(cmd)
     process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
     for line in process.stdout.readlines():
         print line
@@ -499,7 +499,7 @@ def D8FlowPathExtremeUp(p,sa,maximumupslope,edgecontamination,shapefile,inputPro
         cmd = cmd + ' -nc '
 
     print "Command Line: "+cmd
-    os.system(cmd)
+    #os.system(cmd)
     process=subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
     for line in process.stdout.readlines():
         print line
@@ -523,7 +523,7 @@ def GageWatershed(p,shapefile,inputProc,gw,idf, exeDir=None):
     if idf != '':
         cmd=cmd + ' -id ' + '"' + idf + '"' 
     print "Command Line: "+cmd
-    os.system(cmd)
+    #os.system(cmd)
     process=subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
     for line in process.stdout.readlines():
         print line
@@ -543,7 +543,7 @@ def LengthArea(plen,ad8,threshold,exponent,inputProc,ss, exeDir=None):
         cmd = 'mpiexec -n ' + str(inputProc) + ' ' + exeDir +'\\LengthArea -plen ' + '"' + plen + '"' + ' -ad8 ' + '"' + ad8 + '"' + ' -ss ' + '"' + ss + '"' + ' -par ' + str(threshold) + ' ' + str(exponent)
         
     print "Command Line: "+cmd
-    os.system(cmd)
+    #os.system(cmd)
     process=subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
     for line in process.stdout.readlines():
         print line
@@ -565,7 +565,7 @@ def MoveOutletsToStreams(p,src,shapefile,maxdistance,inputProc,om, exeDir=None):
         cmd = 'mpiexec -n ' + str(inputProc) + ' ' + exeDir +'\\MoveOutletsToStreams -p ' + '"' + p + '"' + ' -src ' + '"' + src + '"' + ' -o ' + '"' + shapefile + '"' + ' -om ' + '"' + om + '"' + ' -md ' + str(maxdistance)
         
     print "Command Line: "+cmd
-    os.system(cmd)
+    #os.system(cmd)
     process=subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
     for line in process.stdout.readlines():
         print line
@@ -587,7 +587,7 @@ def PeukerDouglas(fel,centerweight,sideweight,diagonalweight,inputProc,ss, exeDi
         cmd = 'mpiexec -n ' + str(inputProc) +  ' ' + exeDir +'\\PeukerDouglas -fel ' + '"' + fel + '"' + ' -ss ' + '"' + ss + '"' + ' -par ' + str(centerweight) + ' ' + str(sideweight) + ' ' + str(diagonalweight)
     
     print "Command Line: "+cmd
-    os.system(cmd)
+    #os.system(cmd)
     process=subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
     for line in process.stdout.readlines():
         print line
@@ -609,7 +609,7 @@ def SlopeArea(slp,sca,slopeexponent,areaexponent,inputProc,sa, exeDir=None):
         cmd = 'mpiexec -n ' + str(inputProc) + ' ' + exeDir +'\\SlopeArea -slp ' + '"' + slp + '"' + ' -sca ' + '"' + sca + '"' + ' -sa ' + '"' + sa + '"' + ' -par ' + str(slopeexponent) + ' ' + str(areaexponent)
     
     print "Command Line: "+cmd
-    os.system(cmd)
+    #os.system(cmd)
     process=subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
     for line in process.stdout.readlines():
         print line
@@ -634,7 +634,7 @@ def Threshold(ssa,mask,threshold,inputProc,src, exeDir=None):
         cmd = cmd + ' -mask ' + mask
 
     print "Command Line: "+cmd
-    os.system(cmd)
+    #os.system(cmd)
     process=subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
     for line in process.stdout.readlines():
         print line
@@ -665,7 +665,7 @@ def DropAnalysis(fel,p,ad8,ssa,shapefile,minthresh,maxthresh,numthresh,logspace,
         cmd = cmd + '0'
 
     print "Command Line: "+cmd
-    os.system(cmd)
+    #os.system(cmd)
     process=subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
     for line in process.stdout.readlines():
         print line
@@ -698,7 +698,7 @@ def StreamNet(fel,p,ad8,src,shapefile,delineate,inputProc,ord,tree,coord,net,w, 
     if delineate == 'true':
         cmd = cmd + ' -sw '
     print "Command Line: "+cmd
-    os.system(cmd)
+    #os.system(cmd)
     process=subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
     for line in process.stdout.readlines():
         print line
@@ -729,7 +729,7 @@ def StreamDefWithDropAnalysis(fel,p,ad8,ssa,shapefile,mask,minthresh,maxthresh,n
     else:
         cmd = cmd + '0'
     print "Command Line: "+cmd
-    os.system(cmd)
+    #os.system(cmd)
     process=subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
     for line in process.stdout.readlines():
         print line
@@ -746,7 +746,7 @@ def StreamDefWithDropAnalysis(fel,p,ad8,ssa,shapefile,mask,minthresh,maxthresh,n
     if os.path.exists( mask):
         cmd = cmd + ' -mask ' + '"' + mask + '"'
     print "Command Line: "+cmd
-    os.system(cmd)
+    #os.system(cmd)
     process=subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
     for line in process.stdout.readlines():
         print line
@@ -780,7 +780,7 @@ def D8DistDownToStream(p,fel,src,dist,distancemethod,thresh,inputProc,exeDir=Non
         cmd = 'mpiexec -n ' + str(inputProc) + ' ' + exeDir +'\\D8DistDownToStream -p ' + '"' + p + '"' + ' -fel ' + '"' +fel+ '"' +' -src ' + '"' + src + '"' + ' -dist ' + '"' + dist + '"' +' -m '+distmeth+ ' -thresh ' + str(thresh)
     
     print "Command Line: "+cmd
-    os.system(cmd)
+    #os.system(cmd)
     process=subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
     for line in process.stdout.readlines():
         print line
@@ -821,7 +821,7 @@ def D8DistUpToRidge(p,fel,du,distancemethod,statisticalmethod,inputProc,rdg=None
         cmd = cmd + '"' + p + '"' +' -fel ' + '"' + fel + '"' + ' -du ' + '"' + du + '"' + ' -m ' + statmeth + ' ' + distmeth
 
     print "Command Line: "+cmd
-    os.system(cmd)
+    #os.system(cmd)
     process=subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
     for line in process.stdout.readlines():
         print line
@@ -868,7 +868,7 @@ def DinfDistUpToRidge(ang,fel,slp,propthresh,statisticalmethod,distancemethod,ed
         cmd = cmd + ' -nc '
 
     print "Command Line: "+cmd
-    os.system(cmd)
+    #os.system(cmd)
     process=subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
     for line in process.stdout.readlines():
         print line
@@ -905,11 +905,31 @@ def Curvature(inputProc,fel,prof=None,plan=None,horiz=None,unspher=None,ave=None
         print "Output Minimum Curvature Grid: "+min
         cmd = cmd +' -min '+'"' + min + '" '
     print "Command Line: "+cmd
-    os.system(cmd)
+    print "Input Number of Processes: "+str(inputProc)
+    #os.system(cmd)
     process = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE)
     for line in process.stdout.readlines():
         print line
-
+def SelectTypLocSlpPos(inputConf,outputConf,inputProc,outlog=None,exeDir=None):
+    print "Selecting Typical Slope Position Location and Calculating Fuzzy Inference Parameters"
+    print "    Input configuration file: "+inputConf
+    print "    Output configuration file: "+outputConf
+    if outlog is not None:
+        print "    Output Log file: "+outlog
+    
+    if exeDir is None:
+        cmd = 'mpiexec -n '+str(inputProc)+' SelectTypLocSlpPos ' + '"' + inputConf + '"' + ' "' + outputConf + '" '
+    else:
+        cmd = 'mpiexec -n '+str(inputProc)+ ' ' + exeDir +'\\SelectTypLocSlpPos ' + '"' + inputConf + '"' + ' "' + outputConf + '" '
+    if outlog is not None:
+        cmd = cmd + ' "' + outlog + '" '
+    print "Command Line: "+cmd
+    print "Input Number of Processes: "+str(inputProc)
+    ##os.system(cmd)
+    process = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE)
+    for line in process.stdout.readlines():
+        print line
+    
 def FuzzySlpPosInference(config,inputProc,exeDir=None):
     print "Fuzzy Slope Position Inference"
     print "    Configuration file: "+config
@@ -918,7 +938,8 @@ def FuzzySlpPosInference(config,inputProc,exeDir=None):
     else:
         cmd = 'mpiexec -n '+str(inputProc)+ ' ' + exeDir +'\\FuzzySlpPosInference ' + '"' + config + '"'
     print "Command Line: "+cmd
-    os.system(cmd)
+    print "Input Number of Processes: "+str(inputProc)
+    ##os.system(cmd)
     process = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE)
     for line in process.stdout.readlines():
         print line
@@ -946,7 +967,8 @@ def HardenSlpPos(rdg,shd,bks,fts,vly,inputProc,hard,maxsimi,sechard=None,secsimi
             cmd = cmd + ' -m '+str(spsim)+' "'+spsi+'"'
         
     print "Command Line: "+cmd
-    os.system(cmd)
+    print "Input Number of Processes: "+str(inputProc)
+    ##os.system(cmd)
     process = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE)
     for line in process.stdout.readlines():
         print line
@@ -958,7 +980,8 @@ def SimpleCalculator(inputa,inputb,output,operator,inputProc,exeDir=None):
     else:
         cmd = 'mpiexec -n '+str(inputProc)+ ' ' + exeDir +'\\SimpleCalculator -in '+ '"' + inputa + '"' + ' "' + inputb + '"' +' -out '+ '"' + output + '"' + ' -op '+ str(operator)
     print "Command Line: "+cmd
-    os.system(cmd)
+    print "Input Number of Processes: "+str(inputProc)
+    ##os.system(cmd)
     process = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE)
     for line in process.stdout.readlines():
         print line

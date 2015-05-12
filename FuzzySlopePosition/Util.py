@@ -1,11 +1,5 @@
 #! /usr/bin/env python
 #coding=utf-8
-# Program: Fuzzy slope position extraction based on D-8 and D-infinity algorithms
-# 
-# Created By:  Liangjun Zhu
-# Date From :  3/20/15
-# Email     :  zlj@lreis.ac.cn
-#
 
 import os,sys
 from osgeo import gdal
@@ -22,7 +16,7 @@ def currentPath():
 def mkdir(dir):
     if not os.path.isdir(dir):
         os.mkdir(dir)
-def makeResultFolders(rootdir,model):
+def makeResultFolders(rootdir,model,preprocess):
     print "Making results' folders..."
     if not os.path.isdir(rootdir):
         if rootdir != "":
@@ -30,23 +24,27 @@ def makeResultFolders(rootdir,model):
         else:
             rootdir = currentPath() + os.sep + "FuzzySlpPos"
             mkdir(rootdir)
+    
     if model == 0:
         PreprocessDir = rootdir + os.sep + "D8preDir"
         negDEMDir = rootdir + os.sep + "negD8Dir"
     else:
         PreprocessDir = rootdir + os.sep + "DinfpreDir"
         negDEMDir = rootdir + os.sep + "negDinfDir"
-    ParamDir = rootdir + os.sep + "Params" ## contains RPI,Curvature,Slope,Typical locations etc.
+    ParamDir = rootdir + os.sep + "Params" ## contains RPI,Curvature,Slope etc.
     logDir = rootdir + os.sep + "Log"
     outputDir = rootdir + os.sep + "FuzzySlpPos"
     TypLocDir = rootdir + os.sep + "TypLoc"
-    mkdir(PreprocessDir)
-    mkdir(negDEMDir)
+    ConfDir = rootdir + os.sep + "Config"
+    if preprocess:
+        mkdir(PreprocessDir)
+        mkdir(negDEMDir)
     mkdir(ParamDir)
     mkdir(outputDir)
     mkdir(logDir)
     mkdir(TypLocDir)
-    return (PreprocessDir,negDEMDir, ParamDir,logDir, TypLocDir,outputDir)
+    mkdir(ConfDir)
+    return (PreprocessDir,negDEMDir, ParamDir,logDir, TypLocDir,ConfDir,outputDir)
 
 class Raster:
     def __init__(self, nRows, nCols, data, noDataValue=None, geotransform=None, srs=None):

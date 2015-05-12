@@ -1,19 +1,11 @@
 #! /usr/bin/env python
 #coding=utf-8
-# Program: Fuzzy slope position extraction based on D-8 and D-infinity algorithms
-# 
-# Created By:  Liangjun Zhu
-# Date From :  3/20/15
-# Email     :  zlj@lreis.ac.cn
-#
 
 from Nomenclature import *
-from Config import *
 from Util import *
 import TauDEM
-#from shutil import copy2
 import time
-
+from Config import *
 # Stage 1: Preprocessing for Slope, Curvature, RPI
 def PreProcessing(model):
     startT = time.time()
@@ -28,7 +20,7 @@ def PreProcessing(model):
     TIFF2GeoTIFF(rawdem, dem)
     logStatus.write("[Preprocessing] [2/11] Generating negative DEM file for ridge sources extraction...\n")
     logStatus.flush()
-    NegativeDEM(dem,negDEM)
+    NegativeDEM(dem,negDEM) 
     logStatus.write("[Preprocessing] [3/11] Removing pits...\n")
     logStatus.flush()
     TauDEM.pitremove(rawdem,inputProc,demfil,exeDir)
@@ -41,15 +33,19 @@ def PreProcessing(model):
     if model == 1:
         TauDEM.DinfFlowDir(demfil,inputProc,DinfFlowDir,DinfSlp,exeDir)
         TauDEM.DinfFlowDir(negDEMfil,inputProc,negDinfFlowDir,negDinfSlp,exeDir)
-    logStatus.write("[Preprocessing] [5/11] Flow accumulation with Peuker Douglas stream sources as weightgrid...\n")
+    logStatus.write("[Preprocessing] [5/11] Move outlet to initially stream and Generating flow accumulation with Peuker Douglas stream sources as weightgrid...\n")
     logStatus.flush()    
     TauDEM.PeukerDouglas(demfil,centerweight,sideweight,diagonalweight,inputProc,PkrDglStream,exeDir)
     TauDEM.PeukerDouglas(negDEMfil,centerweight,sideweight,diagonalweight,inputProc,negPkrDglStream,exeDir)
+    TauDEM.AreaD8(D8FlowDir,'',PkrDglStream,'false',inputProc,D8ContriArea,exeDir)
+    maxAccum, minAccum, meanAccum, STDAccum = GetRasterStat(D8ContriArea)
+    TauDEM.Threshold(D8ContriArea,'',meanAccum,inputProc,D8Stream,exeDir)
+    TauDEM.MoveOutletsToStreams(D8FlowDir,D8Stream,outlet,maxMoveDist,inputProc,outletM, exeDir)
     if model == 0:
         TauDEM.AreaD8(negD8FlowDir,'',negPkrDglStream,'false',inputProc,negD8ContriArea,exeDir)
-    TauDEM.AreaD8(D8FlowDir,outlet,PkrDglStream,'false',inputProc,D8ContriArea,exeDir)
+    TauDEM.AreaD8(D8FlowDir,outletM,PkrDglStream,'false',inputProc,D8ContriArea,exeDir)
     if model == 1:
-        TauDEM.AreaDinf(DinfFlowDir,outlet,PkrDglStream,'false',inputProc,DinfContriArea,exeDir)
+        TauDEM.AreaDinf(DinfFlowDir,outletM,PkrDglStream,'false',inputProc,DinfContriArea,exeDir)
         TauDEM.AreaDinf(negDinfFlowDir,'',negPkrDglStream,'false',inputProc,negDinfContriArea,exeDir)
     if model ==0:
         logStatus.write("[Preprocessing] [6/11] Generating stream source raster based on Drop Analysis...\n")
@@ -57,36 +53,37 @@ def PreProcessing(model):
         logStatus.write("[Preprocessing] [6/11] Generating stream source raster based on Threshold derived from D8 flow model drop analysis or assigned...\n")
     logStatus.flush()
     
-    ## both D8 and D-infinity need to run drop analysis
-    maxAccum, minAccum, meanAccum, STDAccum = GetRasterStat(D8ContriArea) #print maxAccum, minAccum, meanAccum, STDAccum
-    if meanAccum - STDAccum < 0:
-        minthresh = meanAccum
-    else:
-        minthresh = meanAccum - STDAccum
-    maxthresh = meanAccum + STDAccum
-    TauDEM.DropAnalysis(demfil,D8FlowDir,D8ContriArea,D8ContriArea,outlet,minthresh,maxthresh,numthresh,logspace,inputProc,drpFile, exeDir)
-    drpf = open(drpFile,"r")
-    tempContents=drpf.read()
-    (beg,d8drpThreshold)=tempContents.rsplit(' ',1)
-    drpf.close()
+    
     global D8StreamThreshold
     if D8StreamThreshold == 0:
+        ## both D8 and D-infinity need to run drop analysis
+        maxAccum, minAccum, meanAccum, STDAccum = GetRasterStat(D8ContriArea) #print maxAccum, minAccum, meanAccum, STDAccum
+        if meanAccum - STDAccum < 0:
+            minthresh = meanAccum
+        else:
+            minthresh = meanAccum - STDAccum
+        maxthresh = meanAccum + STDAccum
+        TauDEM.DropAnalysis(demfil,D8FlowDir,D8ContriArea,D8ContriArea,outletM,minthresh,maxthresh,numthresh,logspace,inputProc,drpFile, exeDir)
+        drpf = open(drpFile,"r")
+        tempContents=drpf.read()
+        (beg,d8drpThreshold)=tempContents.rsplit(' ',1)
+        drpf.close()
         D8StreamThreshold = d8drpThreshold
     TauDEM.Threshold(D8ContriArea,'',D8StreamThreshold,inputProc,D8Stream,exeDir)
     if model == 1:
         global DinfStreamThreshold
         if DinfStreamThreshold == 0:
-            DinfStreamThreshold = d8drpThreshold
+            DinfStreamThreshold = D8StreamThreshold
         TauDEM.Threshold(DinfContriArea,'',DinfStreamThreshold,inputProc,DinfStream,exeDir)
     logStatus.write("[Preprocessing] [7/11] Delineating sub-basins...\n")
     logStatus.flush()
-    TauDEM.StreamNet(demfil,D8FlowDir,D8ContriArea,D8Stream,outlet,'false',inputProc,D8StreamOrd,NetTree,NetCoord,D8StreamNet,SubBasin, exeDir)
+    TauDEM.StreamNet(demfil,D8FlowDir,D8ContriArea,D8Stream,outletM,'false',inputProc,D8StreamOrd,NetTree,NetCoord,D8StreamNet,SubBasin, exeDir)
     logStatus.write("[Preprocessing] [8/11] Generating ridge source raster based on threshold method...\n")
     logStatus.flush()
     if model == 0:
         global negD8StreamThreshold
         if negD8StreamThreshold == 0:
-            negD8StreamThreshold = d8drpThreshold
+            negD8StreamThreshold = D8StreamThreshold
         TauDEM.Threshold(negD8ContriArea,'',negD8StreamThreshold,inputProc,negD8Stream,exeDir)
     elif model ==1:
         global negDinfStreamThreshold

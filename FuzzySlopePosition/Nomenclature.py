@@ -1,29 +1,23 @@
 #! /usr/bin/env python
 #coding=utf-8
-# Program: Fuzzy slope position extraction based on D-8 and D-infinity algorithms
-# 
-# Created By:  Liangjun Zhu
-# Date From :  3/20/15
-# Email     :  zlj@lreis.ac.cn
-#
-# Nomenclature
+
 # This file contains predefined filenames.
 import os,sys
 from Util import makeResultFolders
 from Config import *
-
 ####  Stage 0: Overall setting  ####
-PreDir, negDir, ParamDir,LogDir, TypLocDir, FSPDir = makeResultFolders(rootDir,FlowModel)
+PreDir, negDir, ParamDir,LogDir, TypLocDir, ConfDir, FSPDir = makeResultFolders(rootDir,FlowModel,preprocess)
 ####  Stage 1: Preprocessing from DEMsrc  ####
 dem = PreDir + os.sep + 'dem.tif'
 demfil = PreDir + os.sep + 'demfil.tif'
 log_preproc = LogDir + os.sep + 'log_preprocessing.txt'                   ## log file is used to record the process
-HorizC = PreDir + os.sep + 'ProfC_o.tif'
+HorizC = PreDir + os.sep + 'HorizC_o.tif'
 ProfC = PreDir + os.sep + 'ProfC_o.tif'
 ## D8 flow model nomenclature
 D8FlowDir = PreDir + os.sep + 'D8FlowDir.tif'
 D8Slp = PreDir + os.sep + 'D8Slp.tif'
 PkrDglStream = PreDir + os.sep + 'PkrDglStream.tif'
+outletM = PreDir + os.sep + 'outletM.shp'
 D8ContriArea = PreDir + os.sep + 'D8ContriArea.tif'
 drpFile = PreDir + os.sep + 'drpFile.txt'
 D8Stream = PreDir + os.sep + 'D8Stream.tif'
@@ -62,11 +56,12 @@ DinfDistUp = PreDir + os.sep + 'DinfDistUp.tif'
 RPIDinf = PreDir + os.sep + 'RPIDinf.tif'
 
 ## Params files
+
 Slope = ParamDir + os.sep + 'Slp.tif'
 HorizC_mask = ParamDir + os.sep + 'HorizC.tif'
-#PlanC_mask = ParamDir + os.sep + 'PlanC.tif'
 ProfC_mask = ParamDir + os.sep + 'ProfC.tif'
 RPI = ParamDir + os.sep + 'RPI.tif'
+
 
 #    ## Executable files' path
 #    if platform.system() == "Windows":
@@ -76,11 +71,24 @@ RPI = ParamDir + os.sep + 'RPI.tif'
 
 ####   Stage 2: Selection of Typical Locations  ####
 
-RdgExtConfig = TypLocDir + os.sep + "RdgExtConfig.dat"
-ShdExtConfig = TypLocDir + os.sep + "ShdExtConfig.dat"
-BksExtConfig = TypLocDir + os.sep + "BksExtConfig.dat"
-FtsExtConfig = TypLocDir + os.sep + "FtsExtConfig.dat"
-VlyExtConfig = TypLocDir + os.sep + "VlyExtConfig.dat"
+RdgExtConfig = ConfDir + os.sep + "RdgExtConfig.dat"
+ShdExtConfig = ConfDir + os.sep + "ShdExtConfig.dat"
+BksExtConfig = ConfDir + os.sep + "BksExtConfig.dat"
+FtsExtConfig = ConfDir + os.sep + "FtsExtConfig.dat"
+VlyExtConfig = ConfDir + os.sep + "VlyExtConfig.dat"
+if ExtLog:
+    RdgExtLog = LogDir + os.sep + "RdgExtLog.dat"
+    ShdExtLog = LogDir + os.sep + "ShdExtLog.dat"
+    BksExtLog = LogDir + os.sep + "BksExtLog.dat"
+    FtsExtLog = LogDir + os.sep + "FtsExtLog.dat"
+    VlyExtLog = LogDir + os.sep + "VlyExtLog.dat"
+else:
+    RdgExtLog = None
+    ShdExtLog = None
+    BksExtLog = None
+    FtsExtLog = None
+    VlyExtLog = None
+    
 
 RdgTyp = TypLocDir + os.sep + "RdgTyp.tif"
 ShdTyp = TypLocDir + os.sep + "ShdTyp.tif"
@@ -88,23 +96,26 @@ BksTyp = TypLocDir + os.sep + "BksTyp.tif"
 FtsTyp = TypLocDir + os.sep + "FtsTyp.tif"
 VlyTyp = TypLocDir + os.sep + "VlyTyp.tif"
 
+RdgInfRecommend = ConfDir + os.sep + "RdgInfRecommend.dat"
+ShdInfRecommend = ConfDir + os.sep + "ShdInfRecommend.dat"
+BksInfRecommend = ConfDir + os.sep + "BksInfRecommend.dat"
+FtsInfRecommend = ConfDir + os.sep + "FtsInfRecommend.dat"
+VlyInfRecommend = ConfDir + os.sep + "VlyInfRecommend.dat"
 
 
 ####   Stage 3: Fuzzy slope position inference  ####
 
-RdgInfConfig = TypLocDir + os.sep + "RdgInfConfig.dat"
-ShdInfConfig = TypLocDir + os.sep + "ShdInfConfig.dat"
-BksInfConfig = TypLocDir + os.sep + "BksInfConfig.dat"
-FtsInfConfig = TypLocDir + os.sep + "FtsInfConfig.dat"
-VlyInfConfig = TypLocDir + os.sep + "VlyInfConfig.dat"
+RdgInfConfig = ConfDir + os.sep + "RdgInfConfig.dat"
+ShdInfConfig = ConfDir + os.sep + "ShdInfConfig.dat"
+BksInfConfig = ConfDir + os.sep + "BksInfConfig.dat"
+FtsInfConfig = ConfDir + os.sep + "FtsInfConfig.dat"
+VlyInfConfig = ConfDir + os.sep + "VlyInfConfig.dat"
 
 RdgInf = FSPDir + os.sep + "RdgInf.tif"
 ShdInf = FSPDir + os.sep + "ShdInf.tif"
 BksInf = FSPDir + os.sep + "BksInf.tif"
 FtsInf = FSPDir + os.sep + "FtsInf.tif"
 VlyInf = FSPDir + os.sep + "VlyInf.tif"
-
-
 
 HardenSlpPos = FSPDir + os.sep + "HardenSlpPos.tif"
 MaxSimilarity = FSPDir + os.sep + "MaxSimilarity.tif"
@@ -113,3 +124,5 @@ SecHardenSlpPos = FSPDir + os.sep + "SecHardenSlpPos.tif"
 SecMaxSimilarity = FSPDir + os.sep + "SecMaxSimilarity.tif"
     
 SPSIfile = FSPDir + os.sep + "SPSI.tif"
+
+
