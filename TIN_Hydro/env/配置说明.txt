@@ -1,0 +1,17 @@
+0、检查python环境变量，如没有则添加添加
+1、安装GDAL
+	a）setuptools-5.7
+	管理员方式运行cmd，cd到setuptools所在目录，输入python setup.py install
+	b）pip
+	同样，cd到pip所在目录，输入python setup.py install；此时将C:\Python27\ArcGIS10.1\Scripts添加至环境变量PATH中
+	c）GDAL
+	管理员方式运行cmd，cd到gdal安装whl文件所在目录，输入pip install GDAL-1.11.2-cp27-none-win32.whl；在环境变量里新建GDAL_DATA项，路径设置为C:\Python27\Lib\site-packages\osgeo\data；安装vcredist_x86；最后在cmd窗口中输入python    from osgeo import ogr测试GDAL安装是否成功。
+2、安装CGAL
+	直接安装即可，CGAL-Python-0.9.4b1.win32-py2.7.exe
+3、安装XALGLIB
+	解压alglib-3.10.0.cpython.gpl.zip
+	cd 到此文件夹
+	python setup.py进行安装
+
+附：
+1、python扩展包下载：http://www.lfd.uci.edu/~gohlke/pythonlibs/
