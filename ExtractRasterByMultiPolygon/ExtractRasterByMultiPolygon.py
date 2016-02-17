@@ -64,7 +64,7 @@ if __name__ == '__main__':
     ## input
     MultiPolyShp = r'E:\test\poly.shp'
     FieldName = "name" ## Field used to name raster files
-    RasterFile = r'F:\5Z43_pit.tif'
+    RasterFile = r'E:\test.tif'
     BufferSize = 10    ## By default, every single polygon will buffer a distance of 10*cellsize
     ## output
     outDir = r'E:\test\output'

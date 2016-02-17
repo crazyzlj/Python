@@ -11,7 +11,7 @@
 3、安装XALGLIB
 	解压alglib-3.10.0.cpython.gpl.zip
 	cd 到此文件夹
-	python setup.py进行安装
+	python setup.py install进行安装
 
 附：
 1、python扩展包下载：http://www.lfd.uci.edu/~gohlke/pythonlibs/

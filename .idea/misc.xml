@@ -10,10 +10,7 @@
     <ConfirmationsSetting value="0" id="Add" />
     <ConfirmationsSetting value="0" id="Remove" />
   </component>
-  <component name="ProjectRootManager" version="2" project-jdk-name="Python 2.7.8 (C:\Python27\ArcGISx6410.3\python.exe)" project-jdk-type="Python SDK" />
-  <component name="SvnConfiguration">
-    <configuration>C:\Users\ZhuLJ\AppData\Roaming\Subversion</configuration>
-  </component>
+  <component name="ProjectRootManager" version="2" project-jdk-name="Python 2.7.8 (C:\Python27x64\python.exe)" project-jdk-type="Python SDK" />
   <component name="masterDetails">
     <states>
       <state key="ScopeChooserConfigurable.UI">
