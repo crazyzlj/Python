@@ -411,17 +411,41 @@ def preprocessTIN(dt, pts, pts2DList, idwShepardParams,multiplier,SWITCH,ptsInBo
                                             #break
                         #break
             print "    %d false dams have been modified!" % falseDam
-
     return (dt, pts2DList, pts)
-def reCreateTIN(dt, addVertexList):
-    # for f in dt.faces:
-    #     for i in range(3):
-    #         if f.is_constrained(i):
-    #             dt.remove_constraint(f, i)
-    for p in addVertexList:
-        curFace = dt.locate(Point_2(p[0],p[1]))
-        dt.insert(Point_2(p[0],p[1]), curFace)
-    return dt
+def SubdivisionTIN(dt, addVertexList, Pts2DList, VertexList, oldPtsInBorderIdx, borderIdx):
+    if len(addVertexList) > 0:
+        breakLinePtsAdd = []
+        if borderIdx == [] or borderIdx is None:
+            for pt in addVertexList:
+                if pt not in breakLinePtsAdd:
+                    breakLinePtsAdd.append(pt)
+        elif len(addVertexList) == len(borderIdx):
+            breakLinePtsAddInBorder = []
+            for pt in addVertexList:
+                ptIdx = addVertexList.index(pt)
+                if pt not in breakLinePtsAdd:
+                    breakLinePtsAdd.append(pt)
+                    breakLinePtsAddInBorder.append(borderIdx[ptIdx])
+        ## add points to VertexList
+        print "---- %d points will be added as break lines" % len(breakLinePtsAdd)
+        for pts in breakLinePtsAdd:
+            ptsIdx = breakLinePtsAdd.index(pts)
+            VertexList.append(pts)
+            Pts2DList.append([pts[0], pts[1]])
+            ptsAddIdx = VertexList.index(pts)
+            if borderIdx != [] and borderIdx is not None and len(addVertexList) == len(borderIdx):
+                if breakLinePtsAddInBorder[ptsIdx] == 1:
+                    oldPtsInBorderIdx.append(ptsAddIdx)
+        #print len(oldVertexList)
+        for p in breakLinePtsAdd:
+            curFace = dt.locate(Point_2(p[0],p[1]))
+            for i in range(3):
+                if curFace.is_constrained(i):
+                    dt.remove_constraint(curFace, i)
+            dt.insert(Point_2(p[0],p[1]), curFace)
+        return (dt, Pts2DList, VertexList, oldPtsInBorderIdx)
+    else:
+        return (dt, Pts2DList, VertexList, oldPtsInBorderIdx) ## with no change
 def TINstruct(dt, pts2DList, ptsInBorderIdx = None):
     ## Considering the points in boundary in constructing TIN...
     bTriangleVertexList = []
@@ -523,34 +547,44 @@ def tranglePlane(p1,p2,p3):
     #print A,B,C,D
     return (float(A),float(B),float(C),float(D))
 
+def calSteepestVector(A,B,C,directFlag=True):
+    ## the vector of steepest descent path is [A/C, B/C]
+    ## while for the steepest ascent, it is [-A/C, -B/C]
+    if directFlag:
+        steepestVector = [A/C, B/C]
+    else:
+        steepestVector = [-A/C, -B/C]
+    return steepestVector
 
-### @function Calculate which edge will be the steepest descent intersect
+### @function Calculate which edge will be the steepest (descent or ascent) intersect
 ### @parms three vertexes of a triangle (v), a point which is the begin of the steepest descent vector (v0)
+### @parms directFlag is an optional parameter, the default is Ture, which means descent, otherwise False means ascent
 ### @return the first point's index of the intersected edge or None
-def findIntersectIdx(v,v0,A,B,C):
+def findIntersectIdx(v,v0,A,B,C,directFlag=True):
 ### the basic idea is OC=xOA+yOB, when x>0 and y>0, then OC is between OA and OB
 ### and be careful, this function can not handle the situation that v0 is one of v!
     intersect = []##  intersect is the first point's index of the intersected edges
     edge = -1
+    steepestVector = calSteepestVector(A,B,C,directFlag)
     for i in range(3):
         ## OA, OB vector
         o1 = [v[i][0]-v0[0],v[i][1]-v0[1]]
         o2 = [v[(i+1)%3][0]-v0[0],v[(i+1)%3][1]-v0[1]]
         ## if OA and OB are colinear?
         k  = o1[1]*o2[0]-o1[0]*o2[1]
-        if abs(k) <= ZERO:
-            ## if deepest flow path vector (A/C, B/C) is also collinear?
-            k1 = o1[1]*A/C - o1[0]*B/C
-            k2 = o2[1]*A/C - o2[0]*B/C
-            if abs(k1) <= ZERO and abs(k2) <= ZERO:
+        if abs(k) <= ZERO: ## is colinear
+            ## if steepest vector is also collinear?
+            k1 = o1[1]*steepestVector[0] - o1[0]*steepestVector[1]
+            k2 = o2[1]*steepestVector[0] - o2[0]*steepestVector[1]
+            if abs(k1) <= ZERO and abs(k2) <= ZERO: ## is colinear
                 intersect.append(i)
             edge = i
         else:
-            m  = (o2[0]*B/C-o2[1]*A/C) / k
+            m  = (o2[0]*steepestVector[1]-o2[1]*steepestVector[0]) / k
             if o2[0] != 0:
-                n = (A/C-m*o1[0])/o2[0]
+                n = (steepestVector[0]-m*o1[0])/o2[0]
             else:
-                n = (B/C-m*o1[1])/o2[1]
+                n = (steepestVector[1]-m*o1[1])/o2[1]
             if m > 0 and n > 0:
                 intersect.append(i)
     if len(intersect) > 0:
@@ -598,7 +632,7 @@ def intersectPoint(p0,normal,p1,p2):
 ### @function calculate the steepest flow path from the centriod of a triangle to one of the edges
 ### @params index of the triangle(curTriangleIdx), TriangleVertexList,VertexList,VertexTriangleList,curPath,curVerIdx
 ### @return the coordinate of the intersected points (interPt), and the next triangle index
-def firstSegmentSteepestPath(curTriangleIdx,TriangleVertexList,VertexList,VertexTriangleList,curPath,curVerIdx):
+def firstSegmentSteepestPath(curTriangleIdx,TriangleVertexList,VertexList,VertexTriangleList,curPath,curVerIdx, directFlag=True):
     ## the plane equation is defined as Ax+By+Cz+D=0
     t = TriangleVertexList[curTriangleIdx]
     v = [VertexList[t[0]],VertexList[t[1]],VertexList[t[2]]]
@@ -617,7 +651,7 @@ def firstSegmentSteepestPath(curTriangleIdx,TriangleVertexList,VertexList,Vertex
         intersect = findIntersectIdx(v,v0,A,B,C)  ## the first point's index of the intersected edge
         ## calculate the endpoint
         if intersect is not None:
-            (xx,yy) = intersectPoint(v0,[A/C,B/C],v[intersect],v[(intersect+1)%3])
+            (xx,yy) = intersectPoint(v0,calSteepestVector(A,B,C,directFlag),v[intersect],v[(intersect+1)%3])
             if xx is not None and yy is not None:
                 zz = -1*(A*xx+B*yy+D)/C
                 interPt = [xx,yy,zz]
@@ -662,13 +696,14 @@ def pointInLine(pt0, pt1, pt2): ## if pt0 on the line determined by pt1 and pt2
             return False
 
 ### @function Figure out if the steepest flow direction is towards the edge
-### @params start (pt1) and end(pt2) vertex coordinate of the edge, v is triangleVertexes
+### @params start (pt1) and end(pt2) vertex coordinate of the edge, v is triangle Vertexes
 ### @return value which indicates whether flow in or out of the edge
-def flow2edge(pt1, pt2, v):
+def flow2edge(pt1, pt2, v, directFlag = True):
     A,B,C,D = tranglePlane(v[0],v[1],v[2])
     if C != 0:
         edge = [pt2[0]-pt1[0], pt2[1]-pt1[1]]
-        m = A/C*edge[1] - B/C * edge[0]
+        steepestVector = calSteepestVector(A,B,C,directFlag)
+        m = steepestVector[0]*edge[1] - steepestVector[1] * edge[0]
         return m
     # else:
     # ## C == 0 means three points is colinear!
@@ -679,73 +714,93 @@ def flow2edge(pt1, pt2, v):
 ### @function Continue the calculation of steepest flow path, begin with a node in the TIN
 ### @params start node index (sVertexIdx), TriangleVertexList,VertexList,VertexTriangleList,curPath,curVerIdx, breakLinePts
 ### @return No return and this a recursive function
-def continuedVertexSteepestPath(sVertexIdx,TriangleVertexList,VertexList,VertexTriangleList,curPath,curVerIdx, breakLinePts):
+def continuedVertexSteepestPath(sVertexIdx,TriangleVertexList,VertexList,VertexTriangleList,curPath,curVerIdx, breakLinePts, directFlag = True, stopNodes = None, traceTriIdx = None, breakPtsInBorderIdx = None, oldPtsInBorderIdx = None):
+    startVertex = VertexList[sVertexIdx]
     adjTriangle = VertexTriangleList[sVertexIdx]
     #print "vertex ID: %d" % sVertexIdx
     ## if both triangles slopes towards the edge and the edge flow away
     ## from the sVertexIdx, then the path continues to be channel
-    flag2 = True  ## the next segement is overland flow
     flag1 = True  ## the next segement is channel flow
-    
-    edgeDownslp = []
-    for tri in range(len(adjTriangle)):
-        tri2 = (tri+1)%len(adjTriangle)
-        if adjTriangle[tri] is not None and adjTriangle[tri2] is not None:
-            t1 = TriangleVertexList[adjTriangle[tri]]
-            t2 = TriangleVertexList[adjTriangle[tri2]]
-            if t1 is not None and t2 is not None:
-                v1 = [VertexList[t1[0]],VertexList[t1[1]],VertexList[t1[2]]]
-                v2 = [VertexList[t2[0]],VertexList[t2[1]],VertexList[t2[2]]]
-                startVertex = VertexList[sVertexIdx]
-                endVertexIdxList = list(set([t1[0],t1[1],t1[2]]).intersection(set([t2[0],t2[1],t2[2]])))
-                #print sVertexIdx,endVertexIdxList
-                endVertexIdxList.remove(sVertexIdx)
-                if len(endVertexIdxList) == 1:
-                    endVertexIdx = endVertexIdxList[0]
-                    endVertex = VertexList[endVertexIdx]
-                    leftFlag = leftTriangle(startVertex,endVertex,v1)
-                    if leftFlag == True:
-                        m1 = flow2edge(startVertex,endVertex,v1)
-                        m2 = flow2edge(startVertex,endVertex,v2)
-                    else:
-                        m1 = flow2edge(startVertex,endVertex,v2)
-                        m2 = flow2edge(startVertex,endVertex,v1)
-                    if (m1 > 0 and m2 < 0) or (m1 > 0 and abs(m2) < ZERO) or (m2 < 0 and abs(m1) < ZERO):
-                        if endVertex[2] < startVertex[2]:
-                            edgeDownslp.append([endVertexIdx,startVertex[2] - endVertex[2]])
-    if len(edgeDownslp) != 0:
-        maxElevDiff = -9999.0
-        for elem in edgeDownslp:
-            if elem[1] > maxElevDiff:
-                maxElevDiff = elem[1]
-                endVertexIdx = elem[0]
-        curPath.append(VertexList[endVertexIdx])
-        curVerIdx.append(endVertexIdx)
-        continuedVertexSteepestPath(endVertexIdx,TriangleVertexList,VertexList,VertexTriangleList,curPath,curVerIdx, breakLinePts)
-    else:
+    flag2 = True  ## the next segement is overland flow
+    if traceTriIdx is not None:
         flag1 = False
+    if flag1:
+        ## channel flow??
+        edgeDownslp = []
+        for tri in range(len(adjTriangle)):
+            tri2 = (tri+1)%len(adjTriangle)
+            if adjTriangle[tri] is not None and adjTriangle[tri2] is not None:
+                t1 = TriangleVertexList[adjTriangle[tri]]
+                t2 = TriangleVertexList[adjTriangle[tri2]]
+                if t1 is not None and t2 is not None:
+                    v1 = [VertexList[t1[0]],VertexList[t1[1]],VertexList[t1[2]]]
+                    v2 = [VertexList[t2[0]],VertexList[t2[1]],VertexList[t2[2]]]
+                    #startVertex = VertexList[sVertexIdx]
+                    endVertexIdxList = list(set([t1[0],t1[1],t1[2]]).intersection(set([t2[0],t2[1],t2[2]])))
+                    #print sVertexIdx,endVertexIdxList
+                    endVertexIdxList.remove(sVertexIdx)
+                    if len(endVertexIdxList) == 1:
+                        endVertexIdx = endVertexIdxList[0]
+                        endVertex = VertexList[endVertexIdx]
+                        leftFlag = leftTriangle(startVertex,endVertex,v1)
+                        if leftFlag == True:
+                            m1 = flow2edge(startVertex,endVertex,v1,directFlag)
+                            m2 = flow2edge(startVertex,endVertex,v2,directFlag)
+                        else:
+                            m1 = flow2edge(startVertex,endVertex,v2,directFlag)
+                            m2 = flow2edge(startVertex,endVertex,v1,directFlag)
+                        if (m1 > 0 and m2 < 0) or (m1 > 0 and abs(m2) < ZERO) or (m2 < 0 and abs(m1) < ZERO):
+                            if (endVertex[2] < startVertex[2] and directFlag) or (endVertex[2] > startVertex[2] and directFlag == False):
+                                edgeDownslp.append([endVertexIdx,abs(startVertex[2] - endVertex[2])])
+        if len(edgeDownslp) != 0:
+            maxElevDiff = -9999.0
+            for elem in edgeDownslp:
+                if elem[1] > maxElevDiff:
+                    maxElevDiff = elem[1]
+                    endVertexIdx = elem[0]
+            curPath.append(VertexList[endVertexIdx])
+            curVerIdx.append(endVertexIdx)
+            if stopNodes is None or endVertexIdx not in stopNodes:
+                continuedVertexSteepestPath(endVertexIdx,TriangleVertexList,VertexList,VertexTriangleList,curPath,curVerIdx, breakLinePts,directFlag, stopNodes, None, breakPtsInBorderIdx, oldPtsInBorderIdx)
+        else:
+            flag1 = False
 
     if flag1 == False:
         ## the next flow is not a channel
         ## figure out which triangle it should flow over
         edgeDownslp = []
-        for tri in range(len(adjTriangle)):
-            if adjTriangle[tri] is not None:
-                t = TriangleVertexList[adjTriangle[tri]]
-                if t is not None:
-                    v = [VertexList[t[0]],VertexList[t[1]],VertexList[t[2]]]
-                    A,B,C,D = tranglePlane(v[0],v[1],v[2])
-                    startVertex = VertexList[sVertexIdx]
-                    if C != 0:
-                        intersect = findIntersectIdx(v,startVertex,A,B,C)
-                        if intersect is not None and t[intersect] != sVertexIdx and t[(intersect+1)%3] != sVertexIdx:
-                            pti = v[intersect]
-                            ptj = v[(intersect+1)%3]
-                            (xx,yy) = intersectPoint(startVertex,[A/C,B/C],pti,ptj)
-                            if xx is not None and yy is not None:
-                                zz = -1*(A*xx+B*yy+D)/C
-                                interPt = [xx,yy,zz]
-                                edgeDownslp.append([interPt,t[intersect],t[(intersect+1)%3],adjTriangle[tri],startVertex[2]-zz])
+        if traceTriIdx is None:
+            for tri in range(len(adjTriangle)):
+                if adjTriangle[tri] is not None:
+                    t = TriangleVertexList[adjTriangle[tri]]
+                    if t is not None:
+                        v = [VertexList[t[0]],VertexList[t[1]],VertexList[t[2]]]
+                        A,B,C,D = tranglePlane(v[0],v[1],v[2])
+                        #startVertex = VertexList[sVertexIdx]
+                        if C != 0:
+                            intersect = findIntersectIdx(v,startVertex,A,B,C,directFlag)
+                            if intersect is not None and t[intersect] != sVertexIdx and t[(intersect+1)%3] != sVertexIdx:
+                                pti = v[intersect]
+                                ptj = v[(intersect+1)%3]
+                                (xx,yy) = intersectPoint(startVertex,calSteepestVector(A,B,C,directFlag),pti,ptj)
+                                if xx is not None and yy is not None:
+                                    zz = -1*(A*xx+B*yy+D)/C
+                                    interPt = [xx,yy,zz]
+                                    edgeDownslp.append([interPt,t[intersect],t[(intersect+1)%3],adjTriangle[tri],abs(startVertex[2]-zz)])
+        else: ## the index of next triangle is given
+            t = TriangleVertexList[traceTriIdx]
+            if t is not None:
+                v = [VertexList[t[0]],VertexList[t[1]],VertexList[t[2]]]
+                A,B,C,D = tranglePlane(v[0],v[1],v[2])
+                intersect = t.index(sVertexIdx)
+                intersect = (intersect+1)%3
+                pti = v[intersect]
+                ptj = v[(intersect+1)%3]
+                (xx,yy) = intersectPoint(startVertex,calSteepestVector(A,B,C,directFlag),pti,ptj)
+                if xx is not None and yy is not None:
+                    zz = -1*(A*xx+B*yy+D)/C
+                    interPt = [xx,yy,zz]
+                    edgeDownslp.append([interPt,t[intersect],t[(intersect+1)%3],traceTriIdx,abs(startVertex[2]-zz)])
         if len(edgeDownslp) != 0:
             maxElevDiff = -9999.0
             for elem in edgeDownslp:
@@ -759,7 +814,8 @@ def continuedVertexSteepestPath(sVertexIdx,TriangleVertexList,VertexList,VertexT
             if inListFlag:
                 curPath.append(interPt)
                 curVerIdx.append(simiIdx)
-                continuedVertexSteepestPath(simiIdx,TriangleVertexList,VertexList,VertexTriangleList,curPath,curVerIdx, breakLinePts)
+                if stopNodes is None or simiIdx not in stopNodes:
+                    continuedVertexSteepestPath(simiIdx,TriangleVertexList,VertexList,VertexTriangleList,curPath,curVerIdx, breakLinePts, directFlag, stopNodes, None, breakPtsInBorderIdx, oldPtsInBorderIdx)
             else:
                 curPath.append(interPt)
                 curVerIdx.append(-1)
@@ -769,15 +825,27 @@ def continuedVertexSteepestPath(sVertexIdx,TriangleVertexList,VertexList,VertexT
                 edgeTriangle.remove(triID)
                 if len(edgeTriangle) != 0: ## len(edgeTriangle) == 0 means a terminal
                     breakLinePts.append(interPt)
-                    continuedSteepestPath(interPt, edgeTriangle[0], TriangleVertexList,VertexList,VertexTriangleList,curPath,curVerIdx, breakLinePts)
+                    if directFlag == False and breakPtsInBorderIdx is not None and oldPtsInBorderIdx is not None:
+                        if startIdx in oldPtsInBorderIdx and endIdx in oldPtsInBorderIdx:
+                            breakPtsInBorderIdx.append(1)
+                        else:
+                            breakPtsInBorderIdx.append(0)
+                    continuedSteepestPath(interPt, edgeTriangle[0], TriangleVertexList,VertexList,VertexTriangleList,curPath,curVerIdx, breakLinePts, directFlag, stopNodes, breakPtsInBorderIdx, oldPtsInBorderIdx)
+                elif directFlag == False:
+                    breakLinePts.append(interPt)
+                    if  breakPtsInBorderIdx is not None and oldPtsInBorderIdx is not None:
+                        if startIdx in oldPtsInBorderIdx and endIdx in oldPtsInBorderIdx:
+                            breakPtsInBorderIdx.append(1)
+                        else:
+                            breakPtsInBorderIdx.append(0)
         else:
             flag2 = False
 
-    if flag1 == False and flag2 == False: ## flow to the lowest elevation's direction
+    if flag1 == False and flag2 == False and directFlag: ## flow to the lowest elevation's direction
         nextIdx = getNbrVertexIdx2(sVertexIdx,VertexTriangleList,TriangleVertexList)
         if nextIdx != []:
             maxElevDiff = -9999
-            startVertex = VertexList[sVertexIdx]
+            #startVertex = VertexList[sVertexIdx]
             endVertexIdx = -9999
             for idx in nextIdx:
                 coor = VertexList[idx]
@@ -787,12 +855,12 @@ def continuedVertexSteepestPath(sVertexIdx,TriangleVertexList,VertexList,VertexT
             if endVertexIdx != -9999:
                 curPath.append(VertexList[endVertexIdx])
                 curVerIdx.append(endVertexIdx)
-                continuedVertexSteepestPath(endVertexIdx,TriangleVertexList,VertexList,VertexTriangleList,curPath,curVerIdx, breakLinePts)
+                continuedVertexSteepestPath(endVertexIdx,TriangleVertexList,VertexList,VertexTriangleList,curPath,curVerIdx, breakLinePts, directFlag)
 
 ### @function Continue the calculation of steepest flow path, begin with a point on the edge of a triangle
 ### @params point (secPt), the adjacent triangle (secTriIdx), TriangleVertexList,VertexList,VertexTriangleList,curPath,curVerIdx, breakLinePts
 ### @return No return and this a recursive function
-def continuedSteepestPath(secPt, secTriIdx, TriangleVertexList,VertexList,VertexTriangleList,curPath,curVerIdx, breakLinePts):
+def continuedSteepestPath(secPt, secTriIdx, TriangleVertexList,VertexList,VertexTriangleList,curPath,curVerIdx, breakLinePts, directFlag=True, stopNodes = None, breakPtsInBorderIdx = None, oldPtsInBorderIdx = None):
     #print "Next Triangle ID: %d" % secTriIdx
     t = TriangleVertexList[secTriIdx]
     v = [VertexList[t[0]],VertexList[t[1]],VertexList[t[2]]]
@@ -802,15 +870,15 @@ def continuedSteepestPath(secPt, secTriIdx, TriangleVertexList,VertexList,Vertex
         if pointInLine(secPt, v[i], v[(i+1)%3]):
             intersectCurrent = i
             break
-    ## the vector of steepest descent path is [A/C, B/C, D/C]
+
     ##ij = [ptj[0]-pti[0],ptj[1]-pti[1],ptj[2]-pti[2]]
     if C != 0 and intersectCurrent != -1:
-        intersect = findIntersectIdx(v,secPt,A,B,C)
+        intersect = findIntersectIdx(v,secPt,A,B,C,directFlag)
         if intersect is not None:
             pti = v[intersect]
             ptj = v[(intersect+1)%3]
             if intersect != intersectCurrent: ## overland flow
-                (xx,yy) = intersectPoint(secPt,[A/C,B/C],pti,ptj)
+                (xx,yy) = intersectPoint(secPt,calSteepestVector(A,B,C,directFlag),pti,ptj)
                 if xx is not None and yy is not None:
                     zz = -1*(A*xx+B*yy+D)/C
                     interPt = [xx,yy,zz]
@@ -818,10 +886,17 @@ def continuedSteepestPath(secPt, secTriIdx, TriangleVertexList,VertexList,Vertex
                     if inListFlag:
                         curPath.append(interPt)
                         curVerIdx.append(simiIdx)
-                        continuedVertexSteepestPath(simiIdx,TriangleVertexList,VertexList,VertexTriangleList,curPath,curVerIdx, breakLinePts)
+                        continuedVertexSteepestPath(simiIdx,TriangleVertexList,VertexList,VertexTriangleList,curPath,curVerIdx, breakLinePts, directFlag, stopNodes, None, breakPtsInBorderIdx, oldPtsInBorderIdx)
                     else:
                         curPath.append(interPt)
                         curVerIdx.append(-1)
+                        if directFlag == False:
+                            breakLinePts.append(interPt)
+                            if breakPtsInBorderIdx is not None and oldPtsInBorderIdx is not None:
+                                if t[intersect] in oldPtsInBorderIdx and t[(intersect+1)%3] in oldPtsInBorderIdx:
+                                    breakPtsInBorderIdx.append(1)
+                                else:
+                                    breakPtsInBorderIdx.append(0)
 
                         ## find the next adjacent trangle
                         ## edgeTriangle find the common trangles among two vertexes
@@ -830,19 +905,31 @@ def continuedSteepestPath(secPt, secTriIdx, TriangleVertexList,VertexList,Vertex
                         if len(edgeTriangle) != 0 and edgeTriangle[0] is not None: ## len(edgeTriangle) == 0 means a terminal
                             #print curTriangleIdx, edgeTriangle[0]
                             #print curPath
-                            continuedSteepestPath(interPt, edgeTriangle[0], TriangleVertexList,VertexList,VertexTriangleList,curPath,curVerIdx, breakLinePts)
+                            continuedSteepestPath(interPt, edgeTriangle[0], TriangleVertexList,VertexList,VertexTriangleList,curPath,curVerIdx, breakLinePts, directFlag, stopNodes, breakPtsInBorderIdx, oldPtsInBorderIdx)
             else: ## current edge is channel
-                if pti[2] > ptj[2]:
-                    interPt = ptj
-                    sVertexIdx = t[(intersect+1)%3]
-                    #eVertexIdx = t[intersect]
+                if directFlag:
+                    if pti[2] > ptj[2]:
+                        interPt = ptj
+                        sVertexIdx = t[(intersect+1)%3]
+                        #eVertexIdx = t[intersect]
+                    else:
+                        interPt = pti
+                        sVertexIdx = t[intersect]
+                        #eVertexIdx = t[(intersect+1)%3]
                 else:
-                    interPt = pti
-                    sVertexIdx = t[intersect]
-                    #eVertexIdx = t[(intersect+1)%3]
+                    if pti[2] > ptj[2]:
+                        interPt = pti
+                        sVertexIdx = t[intersect]
+                        #eVertexIdx = t[(intersect+1)%3]
+                    else:
+                        interPt = ptj
+                        sVertexIdx = t[(intersect+1)%3]
+                        #eVertexIdx = t[intersect]
                 curPath.append(interPt)
                 curVerIdx.append(sVertexIdx)
-                continuedVertexSteepestPath(sVertexIdx,TriangleVertexList,VertexList,VertexTriangleList,curPath,curVerIdx, breakLinePts)
+
+                if stopNodes is None or sVertexIdx not in stopNodes:
+                    continuedVertexSteepestPath(sVertexIdx,TriangleVertexList,VertexList,VertexTriangleList,curPath,curVerIdx, breakLinePts,directFlag, stopNodes, None, breakPtsInBorderIdx, oldPtsInBorderIdx)
 
 ### @function calculate a single steepest downslope flow path
 ### @params index of the triangle(curTriangleIdx), TriangleVertexList,VertexList,VertexTriangleList, breakLinePts
@@ -858,20 +945,89 @@ def singleSteepestPath(curTriangleIdx,TriangleVertexList,VertexList,VertexTriang
 ### @function calculate all steepest downslope flow paths, begin from the centroid of each triangles
 ### @params TriangleVertexList, VertexList, VertexTriangleList, breakLinePts
 ### @return SteepestPathList,SteepestPathVertexIdx
-def SteepestDescentPath(TriangleVertexList, VertexList, VertexTriangleList, breakLinePts):
+def SteepestDescentPath(TriangleVertexList, VertexList, VertexTriangleList):
     SteepestPathList = []
     SteepestPathVertexIdx = []
-    #print TriangleVertexList
+    breakLinePts = []
     for t in TriangleVertexList: ## Loop every triangle
         ##curPath store the 3D coordinate of each vertex of the steepest path
         curTriangleIdx = TriangleVertexList.index(t)
-        # if curTriangleIdx == 31:
-        #    print "Error"
         # print curTriangleIdx
         curPath,curVerIdx = singleSteepestPath(curTriangleIdx,TriangleVertexList,VertexList,VertexTriangleList, breakLinePts)
         SteepestPathList.append(curPath)
         SteepestPathVertexIdx.append(curVerIdx)
     return (SteepestPathList, SteepestPathVertexIdx, breakLinePts)
+### @function trace steepest upstream paths from the given nodes indexes (startPts)
+### @params startPts, TriangleVertexList, VertexList, VertexTriangleList
+### @return SteepestPathList,SteepestPathVertexIdx, breakPts
+def SteepestAscentPath(startPts, channelNodes, TriangleVertexList, VertexList, VertexTriangleList, ptsInBorderIdx):
+    SteepestPathList = []
+    SteepestPathVertexIdx = []
+    breakPts = []
+    breakPtsInBorderIdx = [] ## is the added break points in border?
+    for oneStartPts in startPts: ## loop each outlet
+        traceTriangles = []  ## trace upstream across triangles
+        traceEdges = []      ## trace upstream across edges
+        for sNode in oneStartPts: ## Loop every starting node
+            ## get the triangle indexes to be traced ascent
+            surroudTris = VertexTriangleList[sNode[0]]
+            v0 = VertexList[sNode[0]]
+            for triIdx in surroudTris:
+                t = TriangleVertexList[triIdx]
+                v = [VertexList[t[0]],VertexList[t[1]],VertexList[t[2]]]
+                A,B,C,D = tranglePlane(v[0],v[1],v[2])
+                if C != 0:
+                    intersectIdx = findIntersectIdx(v,v0,A,B,C,False)
+                    if intersectIdx is not None and t[intersectIdx] != sNode[0] and t[(intersectIdx+1)%3] != sNode[0]:
+                        traceTriangles.append([sNode[0], triIdx])
+
+            startVertex = v0
+            for tri in range(len(surroudTris)):
+                tri2 = (tri+1)%len(surroudTris)
+                if surroudTris[tri] is not None and surroudTris[tri2] is not None:
+                    t1 = TriangleVertexList[surroudTris[tri]]
+                    t2 = TriangleVertexList[surroudTris[tri2]]
+                    if t1 is not None and t2 is not None:
+                        v1 = [VertexList[t1[0]],VertexList[t1[1]],VertexList[t1[2]]]
+                        v2 = [VertexList[t2[0]],VertexList[t2[1]],VertexList[t2[2]]]
+                        endVertexIdxList = list(set([t1[0],t1[1],t1[2]]).intersection(set([t2[0],t2[1],t2[2]])))
+                        endVertexIdxList.remove(sNode[0])
+                        if len(endVertexIdxList) == 1:
+                            endVertexIdx = endVertexIdxList[0]
+                            endVertex = VertexList[endVertexIdx]
+                            leftFlag = leftTriangle(startVertex,endVertex,v1)
+                            if leftFlag == True:
+                                m1 = flow2edge(startVertex,endVertex,v1,False)
+                                m2 = flow2edge(startVertex,endVertex,v2,False)
+                            else:
+                                m1 = flow2edge(startVertex,endVertex,v2,False)
+                                m2 = flow2edge(startVertex,endVertex,v1,False)
+                            if (m1 > 0 and m2 < 0) or (m1 > 0 and abs(m2) < ZERO) or (m2 < 0 and abs(m1) < ZERO):
+                                if endVertexIdx not in channelNodes and endVertex[2] > startVertex[2]:
+                                    traceEdges.append([sNode[0], endVertexIdx])
+        #print traceTriangles
+        if len(traceTriangles) > 0:
+            for traceTriangle in traceTriangles:
+                curPath, curVerIdx = singleSteepestAscentPath(traceTriangle, TriangleVertexList, VertexList, VertexTriangleList, breakPts, channelNodes,breakPtsInBorderIdx,ptsInBorderIdx)
+                SteepestPathList.append(curPath)
+                SteepestPathVertexIdx.append(curVerIdx)
+        if len(traceEdges) > 0:
+            print traceEdges
+            for traceEdge in traceEdges:
+                curVerIdx = [traceEdge[0],traceEdge[1]]
+                curPath = [VertexList[curVerIdx[0]], VertexList[curVerIdx[1]]]
+                continuedVertexSteepestPath(curVerIdx[1],TriangleVertexList,VertexList,VertexTriangleList,curPath,curVerIdx, breakPts,False,channelNodes, None, breakPtsInBorderIdx, ptsInBorderIdx)
+                SteepestPathList.append(curPath)
+                SteepestPathVertexIdx.append(curVerIdx)
+    return (SteepestPathList, SteepestPathVertexIdx, breakPts, breakPtsInBorderIdx)
+def singleSteepestAscentPath(traceItem, TriangleVertexList, VertexList, VertexTriangleList, breakPts, channelNodes=None, breakPtsInBorderIdx=None,oldPtsInBorderIdx=None):
+    curPath = []
+    curVerIdx = []
+    startCoors = VertexList[traceItem[0]]
+    curPath.append(startCoors)
+    curVerIdx.append(traceItem[0])
+    continuedVertexSteepestPath(traceItem[0],TriangleVertexList,VertexList,VertexTriangleList,curPath,curVerIdx, breakPts,False,channelNodes, traceItem[1],breakPtsInBorderIdx, oldPtsInBorderIdx)
+    return (curPath, curVerIdx)
 
 def leftTriangle(startVertex,endVertex,triangle):
     ### http://blog.csdn.net/modiz/article/details/9928553
@@ -879,21 +1035,24 @@ def leftTriangle(startVertex,endVertex,triangle):
     temp.remove(startVertex)
     temp.remove(endVertex)
     pt = temp[0]
-    s2e = [endVertex[0]-startVertex[0],endVertex[1]-startVertex[1]]
-    s2p = [pt[0]-startVertex[0],pt[1]-startVertex[1]]
+    s2e = [endVertex[0]-startVertex[0],endVertex[1]-startVertex[1]] ## start to end vector
+    s2p = [pt[0]-startVertex[0],pt[1]-startVertex[1]]               ## start to point vector
     m = s2e[0]*s2p[1]-s2e[1]*s2p[0]
-    if m > 0:
+    if m > 0: ## s2e in the clockwise direction of s2p
         return True
     else:
         return False
-def angle(pt1,pt2,v):
+### @function return the angle between the steepest path and the edge (pt1->pt2)
+### @params v is vertexes of triangle
+def angle(pt1,pt2,v,directFlag=True):
     A,B,C,D = tranglePlane(v[0],v[1],v[2])
     if C != 0:
+        steepestVector = calSteepestVector(A,B,C,directFlag)
         edge = [pt2[0]-pt1[0],pt2[1]-pt1[1]]
-        m = A/C*edge[1] - B/C * edge[0]
+        m = steepestVector[0]*edge[1] - steepestVector[1] * edge[0]
         dist = math.sqrt(edge[0]*edge[0]+edge[1]*edge[1])
-        dist = dist * math.sqrt((A/C)*(A/C)+(B/C)*(B/C))
-        cosV = (edge[0]*A/C+edge[1]*B/C)/dist
+        dist = dist * math.sqrt((steepestVector[0])*(steepestVector[0])+(steepestVector[1])*(steepestVector[1]))
+        cosV = (edge[0]*steepestVector[0]+edge[1]*steepestVector[1])/dist
         #print cosV
         if cosV >= 1.0:
             cosV = 1.0
@@ -921,7 +1080,7 @@ def cleanNodeDict(NodesDict):
             tempUp.remove(None)
         NodesDict[node][0] = tempDown[:]
         NodesDict[node][1] = tempUp[:]
-def flowDirection(NodesDict,sVertexIdx,endVertexIdx,TriangleVertexList,VertexTriangleList,VertexList,thresh):
+def flowDirection(NodesDict,sVertexIdx,endVertexIdx,TriangleVertexList,VertexTriangleList,VertexList,thresh,directFlag=True):
     adjTri = getAdjTriangles(sVertexIdx,endVertexIdx, VertexTriangleList)
     if len(adjTri) == 2 and adjTri[0] is not None and adjTri[1] is not None:
         t1 = TriangleVertexList[adjTri[0]]
@@ -932,15 +1091,15 @@ def flowDirection(NodesDict,sVertexIdx,endVertexIdx,TriangleVertexList,VertexTri
         endVertex = VertexList[endVertexIdx]
         leftFlag = leftTriangle(startVertex,endVertex,v1)
         if leftFlag == True:
-            m1 = flow2edge(startVertex,endVertex,v1)
-            m2 = flow2edge(startVertex,endVertex,v2)
-            ang1 = angle(startVertex,endVertex,v1)
-            ang2 = angle(startVertex,endVertex,v2)
+            m1 = flow2edge(startVertex,endVertex,v1,directFlag)
+            m2 = flow2edge(startVertex,endVertex,v2,directFlag)
+            ang1 = angle(startVertex,endVertex,v1,directFlag)
+            ang2 = angle(startVertex,endVertex,v2,directFlag)
         else:
-            m1 = flow2edge(startVertex,endVertex,v2)
-            m2 = flow2edge(startVertex,endVertex,v1)
-            ang1 = angle(startVertex,endVertex,v2)
-            ang2 = angle(startVertex,endVertex,v1)
+            m1 = flow2edge(startVertex,endVertex,v2,directFlag)
+            m2 = flow2edge(startVertex,endVertex,v1,directFlag)
+            ang1 = angle(startVertex,endVertex,v2,directFlag)
+            ang2 = angle(startVertex,endVertex,v1,directFlag)
             
         if (m1 > 0 and m2 < 0) or (m1 > 0 and (abs(m2) < ZERO or ang2 <= thresh)) or (m2 < 0 and (abs(m1) < ZERO or ang1 < thresh)):
             if endVertex[2] < startVertex[2]: ## startVertex is the upstream of endVertex
@@ -957,20 +1116,22 @@ def flowDirection(NodesDict,sVertexIdx,endVertexIdx,TriangleVertexList,VertexTri
 ### @function Calculate channel flow
 ### @params VertexTriangleList, VertexTriangleList, VertexList
 ### @return NodesDict and channelList
-def FindChannelNodes(TriangleVertexList, VertexTriangleList, VertexList,thresh, outletsIdx=None):
+def FindChannelNodes(TriangleVertexList, VertexTriangleList, VertexList,thresh, outletsIdx=None,directFlag=True):
     NodesDict = {}
     channelList = []
     delimitPts = []
+    channelNodes = []
     ## the format of channel's NodesDict is:
     ##    {vertexIndex:[[downStream],[upStream]]}
     for f in TriangleVertexList:
         for i in range(3): ## edge: f[i],f[(i+1)%3] in counterclockwise
             sVertexIdx = f[i]
             endVertexIdx = f[(i+1)%3]
-            flag = flowDirection(NodesDict,sVertexIdx,endVertexIdx,TriangleVertexList,VertexTriangleList,VertexList,thresh)
+            flag = flowDirection(NodesDict,sVertexIdx,endVertexIdx,TriangleVertexList,VertexTriangleList,VertexList,thresh,directFlag)
             if flag == False:
-                flag = flowDirection(NodesDict,endVertexIdx,sVertexIdx,TriangleVertexList,VertexTriangleList,VertexList,thresh)
+                flag = flowDirection(NodesDict,endVertexIdx,sVertexIdx,TriangleVertexList,VertexTriangleList,VertexList,thresh,directFlag)
     cleanNodeDict(NodesDict)
+    #print NodesDict
     outlets = []
     for node in NodesDict:
         if NodesDict[node][0] == [None]:
@@ -991,6 +1152,7 @@ def FindChannelNodes(TriangleVertexList, VertexTriangleList, VertexList,thresh, 
         chaID = 0
         curCha = [chaID, 0, [],[],[],[]]
         maxID = upstreamNodes(outlet, curCha, NodesDict, curChannelList)
+
         for i in curChannelList:
             ithNum = len(i[4])
             for j in curChannelList:
@@ -1028,10 +1190,20 @@ def FindChannelNodes(TriangleVertexList, VertexTriangleList, VertexList,thresh, 
             i[4].reverse()
             for node in i[4]:
                 i[5].append(VertexList[node])
-
+                channelNodes.append(node)
+        for i in curChannelList:
+            if len(i[2]) > 1:
+                curNode = i[4][0]
+                upNodes = []
+                for upNode in i[2]:
+                    upCha = curChannelList[upNode][4]
+                    upNodes.append(upCha[len(upCha)-2])
+                downNode = i[4][1]
+                curDelimitPts.append([curNode, upNodes, downNode])
         channelList.append(curChannelList)
         delimitPts.append(curDelimitPts)
-    return (NodesDict,channelList)
+        channelNodes = list(set(channelNodes))
+    return (NodesDict,channelList,delimitPts, channelNodes)
 def strahlerOrder(index, channelList):
     channel = channelList[index]
     if len(channel[2]) == 0: ## no upstream
@@ -1054,20 +1226,25 @@ def upstreamNodes(curNode, curCha, NodesDict, curOutletChannelList):
     if upNodes != [None]:
         if len(upNodes) == 1: ## curNode has one upstream node
             curNode = upNodes[0]
-            ID = upstreamNodes(curNode, curCha, NodesDict, curOutletChannelList)
-            return ID
+            return upstreamNodes(curNode, curCha, NodesDict, curOutletChannelList)
         else:
-            curOutletChannelList.append(curCha)
-            ID = curCha[0]
+            if len(curCha[4]) > 1:
+                curOutletChannelList.append(curCha)
+                ID = curCha[0]
+            else:
+                ID = curCha[0]-1
             for upNode in upNodes:
-                curCha = [ID+1, 0, [],[],[curNode],[]]
-                ID = upstreamNodes(upNode, curCha, NodesDict, curOutletChannelList)
+                curCha2 = [ID+1, 0, [],[],[curNode],[]]
+                ID = upstreamNodes(upNode, curCha2, NodesDict, curOutletChannelList)
             return ID
     else:
-        curOutletChannelList.append(curCha)
-        return curCha[0]
+        if len(curCha[4]) > 1:
+            curOutletChannelList.append(curCha)
+            return curCha[0]
+        else:
+            return curCha[0]-1
 
-## old code
+## old code -- deprecated
 def backupChannelNodes(curNode,curCha,NodesDict,pts,channelList):
     curCha.append(pts[curNode])
     upNodes = NodesDict[curNode][1]
@@ -1084,3 +1261,41 @@ def backupChannelNodes(curNode,curCha,NodesDict,pts,channelList):
                 backupChannelNodes(upNode,curCha,NodesDict,pts,channelList)
     else:
         channelList.append(curCha)
+
+def GroupTriangles(channelCoors, channelFields, TriangleVertexList, VertexList, VertexTriangleList):
+    ## channelCoors  = [[coordinates of triangle],...]
+    ## channelFields = [['streamID','strahler']]
+    subbasinInfo = {}
+    ## subbasinInfo format: {subbasinID: [[vertex index of every triangles]...]}
+    ## for example: {[0:[[1,2,5],[2,5,8]...],...}
+    ## initialize subbasinInfo
+    channelFields = channelFields[1:]
+    for channel in channelFields:
+        subbasinInfo[channel[0]] = []
+    SteepestPathList = []
+    breakLinePts = []
+    for t in TriangleVertexList: ## Loop every triangle
+        ##curPath store the 3D coordinate of each vertex of the steepest path
+        curTriangleIdx = TriangleVertexList.index(t)
+        # print curTriangleIdx
+        curPath,curVerIdx = singleSteepestPath(curTriangleIdx,TriangleVertexList,VertexList,VertexTriangleList, breakLinePts)
+        SteepestPathList.append(curPath)
+        destChannelID = FindDestinationChannel(curPath, channelCoors, channelFields)
+        if destChannelID is not None:
+            subbasinInfo.get(destChannelID).append(t)
+    return (subbasinInfo, SteepestPathList)
+
+def FindDestinationChannel(pathCoors, channelCoors, channelFields):
+    destChannelID = None
+    for pathCoor in pathCoors:
+        for chaIdx in range(len(channelCoors)):
+            chaCoors = channelCoors[chaIdx]
+            for chaCoorIdx in range(len(chaCoors)-1):
+                if pointInLine(pathCoor, chaCoors[chaCoorIdx], chaCoors[chaCoorIdx + 1]):
+                    destChannelID = channelFields[chaIdx][0]
+                    break
+            else:continue
+            break
+        else: continue
+        break
+    return destChannelID

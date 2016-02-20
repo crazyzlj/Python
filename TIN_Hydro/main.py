@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 #coding=utf-8
-# Package   :  TIN-based Hydro-Net Extraction
+# Package   :  TIN-based Hydrological Analysis
 # 
 # Created By:  Liangjun Zhu
 # Date From :  5/13/15
@@ -16,26 +16,31 @@ from HydroTIN import *
 if __name__ == '__main__':
     ####     INPUT        ####
     ptsShp = r'E:\test\lyg\preprocess\lyg_elevs.shp'
-    #ptsShp = r'E:\test\TINresult\test.shp'
     elevField = "elev"
     inBorder = "isBorder"   ## if do not want to create concave TIN, set inBorder to be None.
-    isOutlet = "isOutlet"   ## This is aimed to invoid the outlet be filled as a sink.
-    workspace = r'E:\test\lyg\20160217'
+    isOutlet = "isOutlet"   ## This is aimed to avoid the outlet be filled as a sink.
+    workspace = r'E:\test\lyg\20160218'
     ####    OPTIONAL      ####
     HANDLE_FLAT_TRIANGLE = True
     HANDLE_PIT = True
     HANDLE_FLAT_EDGE = True
     HANDLE_FALSE_DAM = True
-    idwShepardParams = [15,25]   ## refers to http://www.alglib.net/translator/man/manual.cpython.html#sub_idwbuildmodifiedshepard
+    idwShepardParams = [15,25] ## refers to http://www.alglib.net/translator/man/manual.cpython.html#sub_idwbuildmodifiedshepard
     multiplier = 3             ## used for false dam detection, refers to detectFalseDam funtion in TINcreator.py
-    angleThreshold = 3         ## used in FindChannelNodes
+    angleThreshold = 0         ## used in FindChannelNodes
     ####      END         ####
     
     ####  DEFAULT OUTPUT  ####
-    preprocessing_pts = workspace + os.sep + 'new_point.shp'
-    tin_origin_Shp = workspace + os.sep + 'new_tin.shp'
-    steepestpath_Shp = workspace + os.sep + 'steepest_descent_path.shp'
+    preprocessing_pts = workspace + os.sep + 'points_for_channel.shp'
+    tin_origin_Shp = workspace + os.sep + 'tin_for_channel.shp'
+    steepestDownPath_Shp = workspace + os.sep + 'steepest_descent_path.shp'
     channelpath_Shp = workspace + os.sep + 'channel_path.shp'
+    steepestUpPath_Shp = workspace + os.sep + 'steepest_ascent_path.shp'
+    added_node_Shp = workspace + os.sep + 'added_node_for_subbasin.shp'
+    pts_update_Shp = workspace + os.sep + 'points_for_watershed.shp'
+    tin_update_Shp = workspace + os.sep + 'tin_for_watershed.shp'
+    newSteepestDownPath_Shp = workspace + os.sep + 'new_steepest_descent_path.shp'
+    subbasin_Shp = workspace + os.sep + 'subbasin.shp'
     ####      END         ####
     
     #### GLOBAL VARIABLES ####
@@ -52,70 +57,52 @@ if __name__ == '__main__':
     ####      END         ####
     
     ####  INTERMEDIATE    ####
-    SteepestPathList = []     ## Each steepest path is consist with serveral vertexes from the centriod of triangle
-    SteepestPathVertexIdx = []## Corresponding to SteepestPathList, it stores the index, if the vertex is not node, assigned -1
+    SteepestDescentPathList = []     ## Each steepest path is consist with serveral vertexes from the centriod of triangle
+    SteepestDescentPathVertexIdx = []## Corresponding to SteepestPathList, it stores the index, if the vertex is not node, assigned -1
     ChannelNodesDict = {}     ## Dictionary of channel nodes, include downstream and upstreams
     ####      END         ####
     
-    ####  MAIN FUNCTIONS  ####
+    ####  MAIN PROCEDURES  ####
     ## 1. Read input shapefile of points
     VertexList,pts2DList, ptsInBorderIdx, outletIdx = ReadPoints(ptsShp, elevField, inBorder, isOutlet)
     #print ptsInBorderIdx,len(ptsInBorderIdx)
+
     ## 2. Construct hydrological TIN
     dtObject = createTIN(VertexList,pts2DList)
     dtObject, pts2DList, VertexList = preprocessTIN(dtObject, VertexList, pts2DList, idwShepardParams,multiplier,SWITCH, ptsInBorderIdx, outletIdx)
     TriangleVertexList,TriangleNbrIdxList,VertexTriangleList = TINstruct(dtObject, pts2DList, ptsInBorderIdx)
-    print len(TriangleNbrIdxList), TriangleNbrIdxList
-    print len(VertexTriangleList), VertexTriangleList
+    #print len(TriangleNbrIdxList), TriangleNbrIdxList
+    #print len(VertexTriangleList), VertexTriangleList
     WritePointShp(VertexList,elevField,preprocessing_pts)
     WritePolyonShp(TriangleVertexList,VertexList,tin_origin_Shp)
-    #WritePointShp(VertexList,elevField,workspace + os.sep + 'new_points_origin.shp')
-    #WritePolyonShp(TriangleVertexList,VertexList,workspace + os.sep + 'new_tin_origin.shp')
-    ## 3. Calculate path of steepest decent
-    breakLinePts = []
-    SteepestPathList,SteepestPathVertexIdx, breakLinePts = SteepestDescentPath(TriangleVertexList, VertexList, VertexTriangleList, breakLinePts)
-    WriteLineShp(SteepestPathList,steepestpath_Shp)
-    #WriteLineShp(SteepestPathList,workspace + os.sep + 'new_steepest_origin.shp')
-    # while len(breakLinePts) > 0:
-    #     breakLinePtsAdd = []
-    #     for pt in breakLinePts:
-    #         ptIdx = breakLinePts.index(pt)
-    #         if pt not in breakLinePtsAdd:
-    #             breakLinePtsAdd.append(pt)
-    #     #print breakLinePtsAdd
-    #     ## add points to VertexList
-    #     print "---- %d points will be added as break lines" % len(breakLinePtsAdd)
-    #     #print len(VertexList)
-    #
-    #     for pts in breakLinePtsAdd:
-    #         if pts not in VertexList:
-    #             VertexList.append(pts)
-    #             pts2DList.append([pts[0], pts[1]])
-    #     #print len(VertexList)
-    #     ## run preprocessing again
-    #     dtObject = reCreateTIN(dtObject, breakLinePtsAdd)
-    #     dtObject, pts2DList, VertexList = preprocessTIN(dtObject, VertexList, pts2DList, idwShepardParams,multiplier,[False,False,True,True], ptsInBorderIdx, outletIdx)
-    #     TriangleVertexList,TriangleNbrIdxList,VertexTriangleList = TINstruct(dtObject,pts2DList, ptsInBorderIdx)
-    #     #print len(TriangleNbrIdxList), TriangleNbrIdxList
-    #     #print len(VertexTriangleList), VertexTriangleList
-    #     #WritePointShp(VertexList,elevField,preprocessing_pts)
-    #     #WritePolyonShp(TriangleVertexList,VertexList,tin_origin_Shp)
-    #     breakLinePts = []
-    #     SteepestPathList,SteepestPathVertexIdx, breakLinePts = SteepestDescentPath(TriangleVertexList, VertexList, VertexTriangleList, breakLinePts)
+
+    ## 3. Trace steepest decent paths
+    SteepestDescentPathList, SteepestDescentPathVertexIdx, breakLinePts = SteepestDescentPath(TriangleVertexList, VertexList, VertexTriangleList)
+    WriteLineShp(SteepestDescentPathList, steepestDownPath_Shp)
 
     ## 4. Channel nodes and channel flow lines
-    ChannelNodesDict, channelList = FindChannelNodes(TriangleVertexList, VertexTriangleList, VertexList, angleThreshold, outletIdx)
-    channelCoors = []
-    channelFields = [['streamID','strahler']]
-    for curChannelList in channelList:
-        for cha in curChannelList:
-            channelCoors.append(cha[5])
-            channelFields.append([cha[0],cha[1]])
-    print ChannelNodesDict
+    ChannelNodesDict, channelList, delimitPts, channelNodes = FindChannelNodes(TriangleVertexList, VertexTriangleList, VertexList, angleThreshold, outletIdx)
+    #print delimitPts ## index of delimiting nodes with upstream and downstream nodes
+    #print channelNodes
+    #print ChannelNodesDict
     #print channelCoors
     #print channelFields
-    WriteLineShp(channelCoors,channelpath_Shp,channelFields)
+    channelCoors, channelFields = WriteChannelShp(channelList, channelpath_Shp)
 
     ## 5. Delineation of source area
+    SteepestAscentPathList,SteepestAscentPathVertexIdx, breakLinePts, breakPtsInBorderIdx = SteepestAscentPath(delimitPts, channelNodes, TriangleVertexList, VertexList, VertexTriangleList, ptsInBorderIdx)
+    # print len(breakLinePts)
+    # print len(breakPtsInBorderIdx)
+    WritePointShp(breakLinePts,elevField,added_node_Shp)
+    WriteLineShp(SteepestAscentPathList, steepestUpPath_Shp)
+    dtUpdate, newPts2DList, newVertexList, newPtsInBorderIdx = SubdivisionTIN(dtObject, breakLinePts, pts2DList, VertexList, ptsInBorderIdx, breakPtsInBorderIdx)
+    dtUpdate, newPts2DList, newVertexList = preprocessTIN(dtUpdate, newVertexList, newPts2DList, idwShepardParams,multiplier,[False,False,False,False], newPtsInBorderIdx, outletIdx)
+    newTriangleVertexList,newTriangleNbrIdxList,newVertexTriangleList = TINstruct(dtUpdate,newPts2DList, newPtsInBorderIdx)
+    WritePointShp(newVertexList, elevField, pts_update_Shp)
+    WritePolyonShp(newTriangleVertexList,newVertexList,tin_update_Shp)
 
+    ## 6. Grouping triangles to subbasins
+    subbasinInfo, newSteepestDescentPathList = GroupTriangles(channelCoors, channelFields, newTriangleVertexList, newVertexList, newVertexTriangleList)
+    WriteLineShp(newSteepestDescentPathList, newSteepestDownPath_Shp)
+    WriteSubbasin(subbasinInfo, newVertexList, subbasin_Shp)
     ####      END         ####
