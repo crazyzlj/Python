@@ -44,6 +44,33 @@ def Comparison(baseF, compF, valueF, equalF, gdalType=gdal.GDT_Int16):
     print maxMaxSimiDict
     print minMaxSimiDict
     print stdMaxSimiDict
+def Comparison2(baseF, compF, valueF, equalF, gdalType=gdal.GDT_Int16):
+    baseR = ReadRaster(baseF)
+    compR = ReadRaster(compF)
+    baseD = baseR.data
+    compD = compR.data
+    temp = baseD == compD
+    equalData = numpy.where(temp, baseD, baseR.noDataValue)
+    ## grid in which compF is coincident with baseF
+    WriteGTiffFile(equalF, baseR.nRows, baseR.nCols, equalData, baseR.geotrans, baseR.srs, baseR.noDataValue, gdalType)
+    rngNum = len(valueF)
+    countList = []
+    idxList = []
+    countStatDict = {}
+    for i in range(rngNum):
+        countList.append(0)
+        idxList.append(i)
+    for i in range(rngNum):
+        countStatDict[i] = countList[:]
+
+    for row in range(baseR.nRows):
+        for col in range(baseR.nCols):
+            if baseD[row][col] != baseR.noDataValue and compD[row][col] != compR.noDataValue:
+                baseV = baseD[row][col]
+                compV = compD[row][col]
+                countStatDict.get(int(baseV))[int(compV)] += 1
+    print countStatDict
+
 def DiffMaxSimi(baseF, compF, valueF, diffF, gdalType=gdal.GDT_Float32):
     baseR = ReadRaster(baseF)
     compR = ReadRaster(compF)
@@ -54,17 +81,45 @@ def DiffMaxSimi(baseF, compF, valueF, diffF, gdalType=gdal.GDT_Float32):
     temp = baseD != compD
     diffData = numpy.where(temp, valueD, valueR.noDataValue)
     WriteGTiffFile(diffF, baseR.nRows, baseR.nCols, diffData, baseR.geotrans, baseR.srs, valueR.noDataValue, gdalType)
+def reClassify(baseF, destF,subValues,  gdalType=gdal.GDT_Float32):
+    baseR = ReadRaster(baseF)
+    baseD = baseR.data
+    rows = baseR.nRows
+    cols = baseR.nCols
+    destD = baseD
+    for row in range(rows):
+        for col in range(cols):
+            baseV = baseD[row][col]
+            if baseV != baseR.noDataValue:
+                for rng in subValues:
+                    if rng[0] <= baseV and rng[1] > baseV:
+                        destD[row][col] = subValues.index(rng)
+    WriteGTiffFile(destF, baseR.nRows, baseR.nCols, destD, baseR.geotrans, baseR.srs, baseR.noDataValue, gdalType)
 
 
 if __name__ == '__main__':
-    baseRaster = r'E:\data_m\AutoFuzSlpPos\C&G_zhu_2016\CompareData\harden_qin2009.tif'
-    compRaster = r'E:\data_m\AutoFuzSlpPos\C&G_zhu_2016\CompareData\harden_proposed.tif'
-    equalRaster = r'E:\data_m\AutoFuzSlpPos\C&G_zhu_2016\CompareData\commonSlpPos.tif'
+    # baseRaster = r'E:\data_m\AutoFuzSlpPos\C&G_zhu_2016\CompareData\harden_qin2009.tif'
+    # compRaster = r'E:\data_m\AutoFuzSlpPos\C&G_zhu_2016\CompareData\harden_proposed.tif'
+    # equalRaster = r'E:\data_m\AutoFuzSlpPos\C&G_zhu_2016\CompareData\commonSlpPos.tif'
+    #
+    # baseMaxSimi = r'E:\data_m\AutoFuzSlpPos\C&G_zhu_2016\CompareData\maxS_qin2009.tif'
+    # compMaxSimi = r'E:\data_m\AutoFuzSlpPos\C&G_zhu_2016\CompareData\maxS_proposed.tif'
+    # diffMaxSimi = r'E:\data_m\AutoFuzSlpPos\C&G_zhu_2016\CompareData\qin_based_maxS_diff.tif'
 
-    baseMaxSimi = r'E:\data_m\AutoFuzSlpPos\C&G_zhu_2016\CompareData\maxS_qin2009.tif'
-    compMaxSimi = r'E:\data_m\AutoFuzSlpPos\C&G_zhu_2016\CompareData\maxS_proposed.tif'
-    diffMaxSimi = r'E:\data_m\AutoFuzSlpPos\C&G_zhu_2016\CompareData\qin_based_maxS_diff.tif'
-
-    Comparison(baseRaster, compRaster, baseMaxSimi, equalRaster)
+    #Comparison(baseRaster, compRaster, baseMaxSimi, equalRaster)
     #Comparison(compRaster, baseRaster, compMaxSimi, equalRaster)
     #DiffMaxSimi(baseRaster, compRaster, baseMaxSimi, diffMaxSimi)
+
+    FileName = ['RdgInf.tif','ShdInf.tif','BksInf.tif','FtsInf.tif','VlyInf.tif']
+    for filename in FileName:
+        baseF = r'E:\data_m\AutoFuzSlpPos\C&G_zhu_2016\CompareWithQin2009\basedOriginRPI\withoutElev\FuzzySlpPos\%s' % filename
+        compF = r'E:\data_m\AutoFuzSlpPos\C&G_zhu_2016\CompareWithQin2009\Qin_2009_version2\FuzzySlpPos\%s' % filename
+        workspace = r'E:\data_m\AutoFuzSlpPos\C&G_zhu_2016\CompareWithQin2009\comparison'
+        subSection = [[0,0.2],[0.2,0.4],[0.4,0.6],[0.6,0.8],[0.8,1]]
+        baseDestF = workspace + '\\base_' + filename
+        #reClassify(baseF, baseDestF, subSection)
+        compDestF = workspace + '\\comp_' + filename
+        #reClassify(compF, compDestF, subSection)
+        equalF = workspace + '\\equal_' + filename
+        Comparison2(baseDestF, compDestF, subSection, equalF)
+

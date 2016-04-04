@@ -6,7 +6,8 @@
 ## Usage : Convert a .csv filetype points file to a vector shapefile
 ##         put this .py file in the same folder, input the file name and 
 ##         x,y column name.
-import os,arcpy,sys
+import os,sys
+import arcpy
 from arcpy import env
 
 def currentPath():

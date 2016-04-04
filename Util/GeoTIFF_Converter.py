@@ -71,7 +71,7 @@ NODATA_VALUE %f
         f.write("\n")
     f.close()
 
-def TIFF2GeoTIFF(tif,geotif, gdalType=gdal.GDT_Float32):
+def Raster2GeoTIFF(tif,geotif, gdalType=gdal.GDT_Float32):
     print "Convering TIFF format to GeoTIFF..."
     rstFile = ReadRaster(tif)
     WriteGTiffFile(geotif, rstFile.nRows, rstFile.nCols, rstFile.data, rstFile.geotrans, rstFile.srs, rstFile.noDataValue, gdalType)
@@ -86,6 +86,6 @@ def GRID2ASC(tif,asc):
 if __name__ == '__main__':
     rawDEM = r'E:\github-zlj\parallel_RPI_demo\data\testDEM.tif'
     GeoTiff  = r'E:\github-zlj\parallel_RPI_demo\data\DEM.tif'
-    TIFF2GeoTIFF(rawDEM, GeoTiff)
+    Raster2GeoTIFF(rawDEM, GeoTiff)
     ASC = r'E:\github-zlj\parallel_RPI_demo\data\DEM.asc'
     GRID2ASC(rawDEM, ASC)

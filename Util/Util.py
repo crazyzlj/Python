@@ -24,6 +24,7 @@ from gdalconst import *
 import numpy
 import math
 from shutil import rmtree
+import subprocess
 
 sysstr = platform.system()
 if sysstr == "Windows":
@@ -46,6 +47,7 @@ def rmmkdir(dir):
         rmtree(dir,True)
         os.mkdir(dir)
 
+ZERO = 1e-6
 DELTA = 0.000001
 def FloatEqual(a, b):
     return abs(a - b) < DELTA
@@ -134,6 +136,16 @@ def slopeTrans(tanslp,slp):
     temp = origin.data == origin.noDataValue
     slpdata = numpy.where(temp,origin.noDataValue,numpy.arctan(origin.data) * 180. / numpy.pi)
     WriteGTiffFile(slp, origin.nRows, origin.nCols, slpdata, origin.geotrans, origin.srs, origin.noDataValue, gdal.GDT_Float32)
+def Binarization(orgF, destF, threshold):
+    orgR = ReadRaster(orgF)
+    orgD = orgR.data
+    temp = orgD > threshold
+    destD = numpy.where(temp,1,orgR.noDataValue)
+    WriteGTiffFile(destF, orgR.nRows, orgR.nCols, destD, orgR.geotrans, orgR.srs, orgR.noDataValue, gdal.GDT_Float32)
+def Counting(orgF):
+    orgR = ReadRaster(orgF)
+    temp = orgR.data != orgR.noDataValue
+    return numpy.sum(temp)
 def RasterStatistics(rasterFile):
     ds = gdal.Open(rasterFile)
     band = ds.GetRasterBand(1)
@@ -266,14 +278,40 @@ def WriteLineShp(lineList,outShp):
         lyr.CreateFeature(feature)
         feature.Destroy()
     ds.Destroy()
+def SplitRasters(rs, splitShp, fieldName, tempDir):
+    rmmkdir(tempDir)
+    ds = ogr.Open(splitShp)
+    lyr = ds.GetLayer(0)
+    lyr.ResetReading()
+    ft = lyr.GetNextFeature()
+    while ft:
+        cur_field_name = ft.GetFieldAsString(fieldName)
+        for r in rs:
+            curFileName = r.split(os.sep)[-1]
+            outraster = tempDir + os.sep + curFileName.replace('.tif','_%s.tif' % cur_field_name.replace(' ', '_'))
+            subprocess.call(['gdalwarp', r, outraster, '-cutline', splitShp,
+                             '-crop_to_cutline', '-cwhere', "'%s'='%s'" % (fieldName, cur_field_name), '-dstnodata', '-9999'])
+        ft = lyr.GetNextFeature()
+    ds = None
+    #rmtree(tempDir,True)
 
 ## test code ##
 if __name__ == '__main__':
     # tanslp = r'C:\Users\ZhuLJ\Desktop\test\DinfSlp.tif'
     # slp = r'C:\Users\ZhuLJ\Desktop\test\Slp.tif'
     # slopeTrans(tanslp,slp)
-    feetF = r'E:\data\PleasantValley\Fuzzy_slope_position_qin2009\feet_asc\vly1_ed_1.asc'
-    meterF = r'E:\data\PleasantValley\Fuzzy_slope_position_qin2009\meter_tif\vlyInf_meter_qin.tif'
+    #feetF = r'E:\data\PleasantValley\Fuzzy_slope_position_qin2009\feet_asc\vly1_ed_1.asc'
+    #meterF = r'E:\data\PleasantValley\Fuzzy_slope_position_qin2009\meter_tif\vlyInf_meter_qin.tif'
     #Raster2GeoTIFF(, )
     #Raster2Asc(meterF, r'E:\data\PleasantValley\PleasantVly-DEM-version\pvDEM_meter_from_3dr.asc')
-    Feet2Meter(feetF, meterF, False)
+    #Feet2Meter(feetF, meterF, False)
+    #file = r'E:\data_m\QSWAT_projects\Done\baseSim_unCali\baseSim_unCali\pond_preprocess\temp\pond_no_stream_1.tif'
+    #print Counting(file)
+    dem = r'E:\data_m\FieldPartition\dianbu\Source\dem_3wtsdfel.tif'
+    stream = r'E:\data_m\FieldPartition\dianbu\Source\dem_3wtsdsrc.tif'
+    flowdir = r'E:\data_m\FieldPartition\dianbu\Source\dem_3wtsdp.tif'
+    landuse = r'E:\data\Dianbu\temp\landuse_3wtsd.tif'
+    subbsn_shp = r'E:\data\Dianbu\subbasin\3wtsds_merge.shp'
+    field = 'wtsd'
+    outdir = r'E:\data\Dianbu\patch_partition'
+    SplitRasters([dem,stream,flowdir,landuse],subbsn_shp,field,outdir)
