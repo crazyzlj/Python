@@ -4,6 +4,16 @@ import ogr
 import subprocess
 from shutil import rmtree
 def pond_without_stream(orgF, v1, stream, v2, outF, gdalType=gdal.GDT_Float32):
+    '''
+    Eliminate stream grid which located in pond
+    :param orgF: POND source grid with unique value
+    :param v1: value that represents pond
+    :param stream: STREAM source grid with unique value
+    :param v2: value that represents stream
+    :param outF: output grid
+    :param gdalType: (default parameter) output grid file type
+    :return:
+    '''
     orgR = ReadRaster(orgF)
     orgD = orgR.data
     streamR = ReadRaster(stream)
@@ -38,6 +48,15 @@ def GDAL_SWAP(inraster, inshape, fieldName):
         ft = lyr.GetNextFeature()
     ds = None
 def Calculate_PND_FR(rs, subbasinShp, fieldName, tempDir, outCSV):
+    '''
+
+    :param rs:
+    :param subbasinShp:
+    :param fieldName:
+    :param tempDir:
+    :param outCSV:
+    :return:
+    '''
     ### stats = {subbasinID: [pondNum, pondSrcNum, subbasinNum]...}
     #GDAL_SWAP(pond, subbasinShp, fieldName)
     rmmkdir(tempDir)
@@ -58,7 +77,8 @@ def Calculate_PND_FR(rs, subbasinShp, fieldName, tempDir, outCSV):
         stats[cur_field_name] = counts
         ft = lyr.GetNextFeature()
     ds = None
-    rmtree(tempDir,True)
+    ## delete temporary files
+    #rmtree(tempDir,True)
     #stats = {'11': [39, 1327, 3025], '10': [5, 7, 2916], '13': [0, 0, 3202], '12': [155, 1528, 3181], '15': [68, 635, 12111], '14': [8, 295, 6426], '1': [43, 2218, 0], '3': [51, 2644, 7412], '2': [124, 1462, 8075], '5': [13, 38, 2580], '4': [0, 0, 5569], '7': [53, 171, 3551], '6': [0, 0, 1227], '9': [187, 2199, 3444], '8': [17, 24, 1056]}
     f = open(outCSV, 'w')
     f.write("subbsnID,pondNum,pondSrcNum,SubbsnNum\n")
@@ -73,8 +93,8 @@ def Calculate_PND_FR(rs, subbasinShp, fieldName, tempDir, outCSV):
     f.close()
     #print stats
 if __name__ == '__main__':
-    ORG_POND_PATH = r'E:\data\zhongTianShe\pond_preprocess'
-    SWAT_PROJ_PATH = r'E:\data_m\QSWAT_projects\Done\basin5_unCali\basin5_unCali'
+    ORG_POND_PATH = r'E:\data\zhongTianShe\model_data_swat\modeling\pond_preprocess'
+    SWAT_PROJ_PATH = r'E:\data_m\QSWAT_projects\Done\baseSim_unCali\baseSim_unCali'
     DEM_NAME = 'dem_zts'
     PROC_NUM = 4
     MPI_PATH = None
