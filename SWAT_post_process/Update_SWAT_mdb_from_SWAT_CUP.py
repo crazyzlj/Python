@@ -10,17 +10,13 @@
 ###@author : Liang-Jun Zhu
 ###@Email  : zlj@lreis.ac.cn
 ###@website: zhulj.science
+
 import pyodbc
-import sys,os
+from utils import *
 
 ext2Table = {'mgt':'mgt1'}
 
-def currentPath():
-    path = sys.path[0]
-    if os.path.isdir(path):
-        return path
-    elif os.path.isfile(path):
-        return os.path.dirname(path)
+
 class paraIdentifier:
     ### the parameter identifier format proposed by SWAT-CUP
     ### x__<parname>.<ext>__<hydrogrp>__<soltext>__<landuse>__<subbsn>__<slope>
@@ -38,37 +34,7 @@ class paraIdentifier:
     def printStr(self):
         print "indentifer: %s, name: %s, table: %s, layers: %s, hydroGRP: %s, soil texture: %s, landuse: %s, subbasin: %s, slope: %s" % \
               (self.indent, self.name, self.ext, self.lyr, self.hydrogrp, self.soltext, self.landuse, self.subbsn, self.slope)
-def StripStr(str):
-    ### @Function: Remove space(' ') and indent('\t') at the begin and end of the string
-    oldStr = ''
-    newStr = str
-    while oldStr != newStr:
-        oldStr = newStr
-        newStr = oldStr.strip('\t')
-        newStr = newStr.strip(' ')
-    return newStr
-def SplitStr(str, spliter=None):
-    ### @Function: Split string by spliter space(' ') and indent('\t') as default
-    spliters = [' ','\t']
-    if spliter is not None:
-        spliters.append(spliter)
-    destStrs = []
-    srcStrs = [str]
-    while True:
-        oldDestStrs = srcStrs[:]
-        for s in spliters:
-            for srcS in srcStrs:
-                tempStrs = srcS.split(s)
-                for tempS in tempStrs:
-                    tempS = StripStr(tempS)
-                    if tempS != '':
-                        destStrs.append(tempS)
-            srcStrs = destStrs[:]
-            destStrs = []
-        if oldDestStrs == srcStrs:
-            destStrs = srcStrs[:]
-            break
-    return destStrs
+
 def ExtractMultiNums(str):
     ### the foundamental format of str is 1,2,4-6.
     orgNums = SplitStr(str, ',')
