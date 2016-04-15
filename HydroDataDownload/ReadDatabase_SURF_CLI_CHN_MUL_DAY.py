@@ -53,7 +53,8 @@ def getTablesList(dbpath):
     tabs = cu.execute("select name from sqlite_master where type = 'table' order by name").fetchall()
     tabList = []
     for tab in tabs:
-        tabList.append(tab[0])
+        if len(tab[0]) == 6:
+            tabList.append(tab[0])
     close_all(conn, cu)
     return tabList
 def fetchData(conn, sql):
@@ -108,8 +109,14 @@ def QueryDatabase(dbpath, savePath, stationIDs, startTime, endTime):
     conn = sqlite3.connect(dbpath)
     stationInfoCSVPath = savePath + os.sep + 'stationInfo.csv'
     stationInfoData = []
-    for stationID in stationIDs:
-        tabName = 'S' + stationID
+    if stationIDs == []:
+        stationIDs = getTablesList(dbpath)
+    else:
+        for i in range(len(stationIDs)):
+            stationIDs[i] = 'S' + stationIDs[i]
+    for tabName in stationIDs:
+        #tabName = 'S' + stationID
+        stationID = tabName[1:]
         if tabName in tableList:
             csvPath = savePath + os.sep + tabName + '.csv'
             startT = datetime.datetime(startTime[0], startTime[1], startTime[2])
@@ -128,10 +135,10 @@ def QueryDatabase(dbpath, savePath, stationIDs, startTime, endTime):
 
 if __name__ == '__main__':
     ## Input parameters
-    SQLITE_DB_PATH = r'E:\data\common_GIS_Data\SURF_CLI_CHN_MUL_DAY_V3.0\test3.db'
-    QUERY_STATION_IDs = ['53845', '53754']
+    SQLITE_DB_PATH = r'...\SURF_CLI_CHN_MUL_DAY_V3.0.db'
+    QUERY_STATION_IDs = []       ## leave it blank to query all stations
     QUERY_DATE_FROM = [1951,1,1] ## format: Year, Month, Day
-    QUERY_DATE_END  = [2016,1,1]
-    SAVE_PATH = r'E:\data\common_GIS_Data\SURF_CLI_CHN_MUL_DAY_V3.0'
+    QUERY_DATE_END  = [2015,12,31]
+    SAVE_PATH = r'...\results'
 
     QueryDatabase(SQLITE_DB_PATH, SAVE_PATH, QUERY_STATION_IDs, QUERY_DATE_FROM, QUERY_DATE_END)

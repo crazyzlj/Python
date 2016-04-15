@@ -153,16 +153,29 @@ class climateStation:
     '''
     class of climate station
     :method: init(ID, lat, lon, alti)
-    :method: printSation()
+    :method: printStation()
     '''
     def __init__(self, ID = '', lat=9999, lon=9999, alti=9999):
-        self.count     = 0
         self.StationID = ID    ## 5 digits
         self.lat       = lat   ## latitude, ORIGIN: up to 5 digits, the format is degree+minute ==> float degree
         self.lon       = lon   ## longitude, ORIGIN: up to 5 digits, the format is degree+minute ==> float degree
         self.alti      = alti  ## altitude, ORIGIN: unit 0.1 meter
     def printStation(self):
         print "%s, %.3f, %.3f, %.1f" % (self.StationID, self.lat, self.lon, self.alti)
+class climateStation2:
+    '''
+    class of climate station2, incase of various station information
+    :method: init(ID, lat, lon, alti)
+    :method: printStation()
+    '''
+    def __init__(self, ID = '', lat=9999, lon=9999, alti=9999):
+        self.count     = 1
+        self.StationID = ID      ## 5 digits
+        self.lat       = [lat]   ## latitude, ORIGIN: up to 5 digits, the format is degree+minute ==> float degree
+        self.lon       = [lon]   ## longitude, ORIGIN: up to 5 digits, the format is degree+minute ==> float degree
+        self.alti      = [alti]  ## altitude, ORIGIN: unit 0.1 meter
+    def printStation(self):
+        print "%s, %s, %s, %s" % (self.StationID, self.lat, self.lon, self.alti)
 class climateFeatures(climateStation):
     '''
     class of climate feature
@@ -381,14 +394,86 @@ def readClimateTxtData(txtPath):
     print "Climate data read finished!"
     return (all_station_info, all_station_climate_data)
 
+def readClimateTxtDataForStations(txtPath):
+    '''
+    read stations' information from climate text file
+    '''
+    print "Read Stations' information..."
+    totNum = 0
+    curNum = 1
+    for root, dirs, files in os.walk(txtPath):
+        totNum = len(files)
+    txtFileName, txtPathList = listTxtPaths(txtPath)
+    all_station_info         = {}  ##  format: StationID: climateStation2
+    ftCodes = ['TEM', 'RHU', 'PRE', 'EVP', 'WIN', 'SSD']
+    fieldCols = [13, 11, 13, 11, 17, 9]
+    for txt in txtPathList:
+        print "--- %d / %d, read climate data file: %s..." % (curNum, totNum, txtFileName[txtPathList.index(txt)])
+        curNum += 1
+        ftCode = MatchFeature(txt)
+        if ftCode is not None:
+            #print ftCode
+            curf = open(txt)
+            for line in curf:
+                curClimItem = SplitStr(StripStr(line.split('\n')[0]))
+                if len(curClimItem) == fieldCols[ftCodes.index(ftCode)]:
+                    #print curClimItem
+                    if curClimItem[0] not in all_station_info.keys():
+                        all_station_info[curClimItem[0]] = climateStation2(curClimItem[0], latlon(curClimItem[1]),\
+                                                                    latlon(curClimItem[2]),int(curClimItem[3]))
+                    else:
+                        preInfo = all_station_info[curClimItem[0]]
+                        curLat = latlon(curClimItem[1])
+                        curLon = latlon(curClimItem[2])
+                        curAlti = int(curClimItem[3])
+                        preLat = preInfo.lat
+                        preLon = preInfo.lon
+                        preAlti = preInfo.alti
+                        flag = False
+                        for i in range(preInfo.count):
+                            if preLat[i] != curLat or preLon[i] != curLon or preAlti[i] != curAlti:
+                                flag = True
+                                break
+                        if flag:
+                            preLat.append(curLat)
+                            preLon.append(curLon)
+                            preAlti.append(curAlti)
+                            preInfo.lat = preLat
+                            preInfo.lon = preLon
+                            preInfo.alti = preAlti
+                            preInfo.count = len(preInfo.lat)
+            curf.close()
+
+    print "Climate stations' information read finished!"
+    # for item in all_station_info.keys():
+    #      print all_station_info[item].printStation()
+    return all_station_info
+def writeClimateStationToTxt(stationInfos, txtPath):
+    f = open(txtPath, "w")
+    title = 'stationID,count,lat,lon,alti\n'
+    f.write(title)
+    for items in stationInfos.keys():
+        itemsStr = items + ',' + str(stationInfos[items].count) + ','
+        curLat = stationInfos[items].lat
+        curLon = stationInfos[items].lon
+        curAlti = stationInfos[items].alti
+        for i in range(stationInfos[items].count):
+            writeItem = itemsStr + str(curLat[i]) + ',' + str(curLon[i]) + ',' + str(curAlti[i]) + '\n'
+            f.write(writeItem)
+    f.close()
 
 if __name__ == '__main__':
     SRC_DATA_PATH = r'E:\data\common_GIS_Data\SURF_CLI_CHN_MUL_DAY_V3.0\testData'
     SQLITE_DB_PATH = r'E:\data\common_GIS_Data\SURF_CLI_CHN_MUL_DAY_V3.0\test3.db'
     startT = time.time()
-    ALL_STATION_INFO, ALL_STATION_DATA = readClimateTxtData(SRC_DATA_PATH)
-    writeClimateStationToDatabase(ALL_STATION_INFO, SQLITE_DB_PATH)
-    writeClimateDataToDatabase(ALL_STATION_DATA, SQLITE_DB_PATH)
+    ## TEST CODE
+    ALL_STATION_TXT = r'E:\data\common_GIS_Data\SURF_CLI_CHN_MUL_DAY_V3.0\stations_all.csv'
+    ALL_STATION_INFO = readClimateTxtDataForStations(SRC_DATA_PATH)
+    writeClimateStationToTxt(ALL_STATION_INFO, ALL_STATION_TXT)
+    ## END TEST
+    #ALL_STATION_INFO, ALL_STATION_DATA = readClimateTxtData(SRC_DATA_PATH)
+    #writeClimateStationToDatabase(ALL_STATION_INFO, SQLITE_DB_PATH)
+    #writeClimateDataToDatabase(ALL_STATION_DATA, SQLITE_DB_PATH)
     endT = time.time()
     cost = endT - startT
     print "All mission done, time-consuming: " + str(cost) + ' s\n'

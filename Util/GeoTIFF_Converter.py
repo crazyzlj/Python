@@ -84,8 +84,8 @@ def GRID2ASC(tif,asc):
     
 
 if __name__ == '__main__':
-    rawDEM = r'E:\github-zlj\parallel_RPI_demo\data\testDEM.tif'
-    GeoTiff  = r'E:\github-zlj\parallel_RPI_demo\data\DEM.tif'
-    Raster2GeoTIFF(rawDEM, GeoTiff)
-    ASC = r'E:\github-zlj\parallel_RPI_demo\data\DEM.asc'
+    rawDEM = r'C:\Users\ZhuLJ\Desktop\tmp.asc'
+    GeoTiff  = r'C:\Users\ZhuLJ\Desktop\tmp.tif'
+    #Raster2GeoTIFF(rawDEM, GeoTiff)
+    ASC = r'C:\Users\ZhuLJ\Desktop\tmp1.asc'
     GRID2ASC(rawDEM, ASC)
