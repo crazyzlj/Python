@@ -419,21 +419,20 @@ def readClimateTxtDataForStations(txtPath):
                 if len(curClimItem) == fieldCols[ftCodes.index(ftCode)]:
                     #print curClimItem
                     if curClimItem[0] not in all_station_info.keys():
-                        all_station_info[curClimItem[0]] = climateStation2(curClimItem[0], latlon(curClimItem[1]),\
-                                                                    latlon(curClimItem[2]),int(curClimItem[3]))
+                        all_station_info[curClimItem[0]] = climateStation2(curClimItem[0], curClimItem[1],\
+                                                                    curClimItem[2],curClimItem[3])
                     else:
                         preInfo = all_station_info[curClimItem[0]]
-                        curLat = latlon(curClimItem[1])
-                        curLon = latlon(curClimItem[2])
-                        curAlti = int(curClimItem[3])
+                        curLat = curClimItem[1]
+                        curLon = curClimItem[2]
+                        curAlti = curClimItem[3]
                         preLat = preInfo.lat
                         preLon = preInfo.lon
                         preAlti = preInfo.alti
-                        flag = False
+                        flag = True
                         for i in range(preInfo.count):
-                            if preLat[i] != curLat or preLon[i] != curLon or preAlti[i] != curAlti:
-                                flag = True
-                                break
+                            if preLat[i] == curLat and preLon[i] == curLon and preAlti[i] == curAlti:
+                                flag = False
                         if flag:
                             preLat.append(curLat)
                             preLon.append(curLon)
@@ -461,7 +460,15 @@ def writeClimateStationToTxt(stationInfos, txtPath):
             writeItem = itemsStr + str(curLat[i]) + ',' + str(curLon[i]) + ',' + str(curAlti[i]) + '\n'
             f.write(writeItem)
     f.close()
-
+def readClimateStationTxt(txtpath):
+    f = open(txtpath)
+    station = []
+    for line in f:
+        strs = line.split(',')
+        if [strs[0], strs[1]] not in station:
+            station.append([strs[0], strs[1]])
+    f.close()
+    print station
 if __name__ == '__main__':
     SRC_DATA_PATH = r'E:\data\common_GIS_Data\SURF_CLI_CHN_MUL_DAY_V3.0\testData'
     SQLITE_DB_PATH = r'E:\data\common_GIS_Data\SURF_CLI_CHN_MUL_DAY_V3.0\test3.db'
@@ -470,6 +477,7 @@ if __name__ == '__main__':
     ALL_STATION_TXT = r'E:\data\common_GIS_Data\SURF_CLI_CHN_MUL_DAY_V3.0\stations_all.csv'
     ALL_STATION_INFO = readClimateTxtDataForStations(SRC_DATA_PATH)
     writeClimateStationToTxt(ALL_STATION_INFO, ALL_STATION_TXT)
+    #readClimateStationTxt(ALL_STATION_TXT)
     ## END TEST
     #ALL_STATION_INFO, ALL_STATION_DATA = readClimateTxtData(SRC_DATA_PATH)
     #writeClimateStationToDatabase(ALL_STATION_INFO, SQLITE_DB_PATH)

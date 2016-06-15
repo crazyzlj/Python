@@ -121,6 +121,7 @@ def QueryDatabase(dbpath, savePath, stationIDs, startTime, endTime):
             csvPath = savePath + os.sep + tabName + '.csv'
             startT = datetime.datetime(startTime[0], startTime[1], startTime[2])
             endT = datetime.datetime(endTime[0], endTime[1], endTime[2])
+            endT += datetime.timedelta(days=1)
             startTStr = startT.strftime("%Y-%m-%d %H:%M:%S")[:10]
             endTStr = endT.strftime("%Y-%m-%d %H:%M:%S")[:10]
             fetch_data_sql = '''SELECT * FROM %s WHERE date BETWEEN "%s" AND "%s" ORDER BY date''' % (tabName, startTStr, endTStr)
@@ -135,10 +136,10 @@ def QueryDatabase(dbpath, savePath, stationIDs, startTime, endTime):
 
 if __name__ == '__main__':
     ## Input parameters
-    SQLITE_DB_PATH = r'...\SURF_CLI_CHN_MUL_DAY_V3.0.db'
-    QUERY_STATION_IDs = []       ## leave it blank to query all stations
-    QUERY_DATE_FROM = [1951,1,1] ## format: Year, Month, Day
-    QUERY_DATE_END  = [2015,12,31]
-    SAVE_PATH = r'...\results'
+    SQLITE_DB_PATH = r'E:\data\common_GIS_Data\SURF_CLI_CHN_MUL_DAY_V3.0\SURF_CLI_CHN_MUL_DAY_V3.db'
+    QUERY_STATION_IDs = ['58321']       ## leave it blank to query all stations
+    QUERY_DATE_FROM = [2014,1,1] ## format: Year, Month, Day
+    QUERY_DATE_END  = [2014,12,31]
+    SAVE_PATH = r'E:\data\Dianbu\climate'
 
     QueryDatabase(SQLITE_DB_PATH, SAVE_PATH, QUERY_STATION_IDs, QUERY_DATE_FROM, QUERY_DATE_END)
