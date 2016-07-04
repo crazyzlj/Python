@@ -92,8 +92,12 @@ def reClassify(baseF, destF,subValues,  gdalType=gdal.GDT_Float32):
             baseV = baseD[row][col]
             if baseV != baseR.noDataValue:
                 for rng in subValues:
-                    if rng[0] <= baseV and rng[1] > baseV:
-                        destD[row][col] = subValues.index(rng)
+                    if rng[1] == 1:
+                        if baseV >= rng[0] and baseV <= rng[1]:
+                            destD[row][col] = subValues.index(rng)
+                    else:
+                        if baseV >= rng[0] and baseV < rng[1]:
+                            destD[row][col] = subValues.index(rng)
     WriteGTiffFile(destF, baseR.nRows, baseR.nCols, destD, baseR.geotrans, baseR.srs, baseR.noDataValue, gdalType)
 
 
@@ -112,14 +116,15 @@ if __name__ == '__main__':
 
     FileName = ['RdgInf.tif','ShdInf.tif','BksInf.tif','FtsInf.tif','VlyInf.tif']
     for filename in FileName:
-        baseF = r'E:\data_m\AutoFuzSlpPos\C&G_zhu_2016\CompareWithQin2009\basedOriginRPI\withoutElev\FuzzySlpPos\%s' % filename
-        compF = r'E:\data_m\AutoFuzSlpPos\C&G_zhu_2016\CompareWithQin2009\Qin_2009_version2\FuzzySlpPos\%s' % filename
-        workspace = r'E:\data_m\AutoFuzSlpPos\C&G_zhu_2016\CompareWithQin2009\comparison'
-        subSection = [[0,0.2],[0.2,0.4],[0.4,0.6],[0.6,0.8],[0.8,1]]
+        compF = r'E:\data_m\AutoFuzSlpPos\C&G_zhu_2016\CompareWithQin2009\basedOriginRPI\FuzzySlpPos\%s' % filename
+        baseF = r'E:\data_m\AutoFuzSlpPos\C&G_zhu_2016\CompareWithQin2009\Qin_2009_version2\FuzzySlpPos\%s' % filename
+        workspace = r'E:\data_m\AutoFuzSlpPos\C&G_zhu_2016\CompareWithQin2009\comparison\qin_as_base'
+        subSection = [[0.8,1],[0.6,0.8],[0.4,0.6],[0.2,0.4],[0,0.2]]
+        ##             0         1         2          3        4
         baseDestF = workspace + '\\base_' + filename
-        #reClassify(baseF, baseDestF, subSection)
+        reClassify(baseF, baseDestF, subSection)
         compDestF = workspace + '\\comp_' + filename
-        #reClassify(compF, compDestF, subSection)
+        reClassify(compF, compDestF, subSection)
         equalF = workspace + '\\equal_' + filename
         Comparison2(baseDestF, compDestF, subSection, equalF)
 

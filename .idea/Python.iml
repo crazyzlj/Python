@@ -5,6 +5,12 @@
     <orderEntry type="jdk" jdkName="Python 2.7.8 (C:\Python27x64\python.exe)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module" module-name="preprocess" />
+    <orderEntry type="module" module-name="GeoPy" />
+    <orderEntry type="module" module-name="PyGeoC" />
+    <orderEntry type="module" module-name="PyGeoC" />
+    <orderEntry type="module" module-name="PyGeoC" />
+    <orderEntry type="module" module-name="PyGeoC" />
+    <orderEntry type="module" module-name="PyGeoC" />
   </component>
   <component name="TestRunnerService">
     <option name="PROJECT_TEST_RUNNER" value="Unittests" />

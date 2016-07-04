@@ -21,7 +21,7 @@ def ListFieldValues(fileLayer, fName):
         for row in rowCursor:
             fieldValues.append(row.getValue(fName))
     return (fieldValues, flag)
-def ExtractRasterByMultiPolygon(shpFile, filedName, originRasterFile, bufferSize, outPath):
+def ExtractRasterByMultiPolygon(shpFile, filedName, originRasterFile, bufferSize, suffix, outPath):
     ## Set environment settings
     if not os.path.isdir(outPath):  ## if outPath is not exist, then build it.
         if outPath != "":
@@ -44,7 +44,10 @@ def ExtractRasterByMultiPolygon(shpFile, filedName, originRasterFile, bufferSize
             polyFile = outPath + os.sep + name + '.shp'
             polyBufferFile = outPath + os.sep + name + '_buf.shp'
             polyFinalFile = outPath + os.sep + name + '_final.shp'
-            rasterFile = outPath + os.sep + name + '.tif'
+            if suffix is None:
+                rasterFile = outPath + os.sep + name + '.tif'
+            else:
+                rasterFile = outPath + os.sep + name + suffix + '.tif'
             polyFiles.append(polyFile)
             polyBufferFiles.append(polyBufferFile)
             rasterFiles.append(rasterFile)
@@ -62,11 +65,13 @@ def ExtractRasterByMultiPolygon(shpFile, filedName, originRasterFile, bufferSize
 
 if __name__ == '__main__':
     ## input
-    MultiPolyShp = r'E:\test\poly.shp'
-    FieldName = "name" ## Field used to name raster files
-    RasterFile = r'E:\test.tif'
-    BufferSize = 10    ## By default, every single polygon will buffer a distance of 10*cellsize
+    MultiPolyShp = r'D:\data\GLake\basins.shp'
+    FieldName = "Code" ## Field used to name raster files
+    RasterFile = r'D:\data\GLake\glake_id.tif'
+    #RasterFile = r'D:\data\GLake\srtm_tp.tif'
+    BufferSize = 20    ## By default, every single polygon will buffer a distance of 10*cellsize
+    suffix = "_ID"     ## If no suffix, set as None
     ## output
-    outDir = r'E:\test\output'
+    outDir = r'D:\data\GLake\GLoutput'
     ## run
-    ExtractRasterByMultiPolygon(MultiPolyShp, FieldName, RasterFile, BufferSize, outDir)
+    ExtractRasterByMultiPolygon(MultiPolyShp, FieldName, RasterFile, BufferSize, suffix, outDir)

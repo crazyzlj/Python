@@ -103,16 +103,17 @@ if __name__ == '__main__':
 ##        f.write(line)
 ##    f.close()
 
-    f=open(r"E:\data\Dianbu\observed\precipitation_download\Sites_P_IDs_dianbu.txt","r")
-    ZhanHaos = []
-    for eachSite in f:
-        ZhanHaos.append(eachSite.split('\n')[0])
-    f.close()
+    # f=open(r"E:\data\Dianbu\observed\precipitation_download\Sites_P_IDs_dianbu.txt","r")
+    # ZhanHaos = []
+    # for eachSite in f:
+    #     ZhanHaos.append(eachSite.split('\n')[0])
+    # f.close()
     #print len(ZhanHaos)
-    print ZhanHaos
+    #print ZhanHaos
+    ZhanHaos = ['99995056']
     def downData(start, end, ZhanHao, year):
         xmlText = GetYcRainSum(start, end, ZhanHao, "1440")
-        savePath = r'E:\data\Dianbu\observed\precipitation_download\%s-%s.txt' % (ZhanHao, str(year))
+        savePath = r'E:\data\Dianbu\observed\%s-%s.txt' % (ZhanHao, str(year))
         success = SaveXML2Csv(xmlText, ".//data", savePath, year)
         #print success
     #ZhanHaos = ['62903180','62942737','62942707','62915310','62933800','62942747','62922800','62942717','62942757']

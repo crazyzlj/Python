@@ -37,3 +37,4 @@ def SplitStr(str, spliter=None):
             destStrs = srcStrs[:]
             break
     return destStrs
+

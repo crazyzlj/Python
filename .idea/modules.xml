@@ -3,6 +3,8 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/../DTA/AutoFuzSlpPos/.idea/AutoFuzSlpPos.iml" filepath="$PROJECT_DIR$/../DTA/AutoFuzSlpPos/.idea/AutoFuzSlpPos.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../GeoPy/.idea/GeoPy.iml" filepath="$PROJECT_DIR$/../GeoPy/.idea/GeoPy.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../PyGeoC/.idea/PyGeoC.iml" filepath="$PROJECT_DIR$/../PyGeoC/.idea/PyGeoC.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/Python.iml" filepath="$PROJECT_DIR$/.idea/Python.iml" />
       <module fileurl="file://$PROJECT_DIR$/../Hydro/SEIMS/preprocess/.idea/preprocess.iml" filepath="$PROJECT_DIR$/../Hydro/SEIMS/preprocess/.idea/preprocess.iml" />
     </modules>
