@@ -1,5 +1,9 @@
 #! /usr/bin/env python
 # coding=utf-8
+#
+# Author: Liang-Jun Zhu
+# Email: zlj@lreis.ac.cn
+#
 
 import httplib, time
 from xml.etree import ElementTree as xmlTree
