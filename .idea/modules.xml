@@ -3,10 +3,13 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/../DTA/AutoFuzSlpPos/.idea/AutoFuzSlpPos.iml" filepath="$PROJECT_DIR$/../DTA/AutoFuzSlpPos/.idea/AutoFuzSlpPos.iml" />
-      <module fileurl="file://$PROJECT_DIR$/../GeoPy/.idea/GeoPy.iml" filepath="$PROJECT_DIR$/../GeoPy/.idea/GeoPy.iml" />
+      <module fileurl="file://$PROJECT_DIR$/NSGA2/.idea/NSGA2.iml" filepath="$PROJECT_DIR$/NSGA2/.idea/NSGA2.iml" />
       <module fileurl="file://$PROJECT_DIR$/../PyGeoC/.idea/PyGeoC.iml" filepath="$PROJECT_DIR$/../PyGeoC/.idea/PyGeoC.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/Python.iml" filepath="$PROJECT_DIR$/.idea/Python.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../Hydro/SEIMS/.idea/SEIMS.iml" filepath="$PROJECT_DIR$/../Hydro/SEIMS/.idea/SEIMS.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../Hydro/SEIMS/postprocess/.idea/postprocess.iml" filepath="$PROJECT_DIR$/../Hydro/SEIMS/postprocess/.idea/postprocess.iml" />
       <module fileurl="file://$PROJECT_DIR$/../Hydro/SEIMS/preprocess/.idea/preprocess.iml" filepath="$PROJECT_DIR$/../Hydro/SEIMS/preprocess/.idea/preprocess.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../DTA/AutoFuzSlpPos/py_main/.idea/py_main.iml" filepath="$PROJECT_DIR$/../DTA/AutoFuzSlpPos/py_main/.idea/py_main.iml" />
     </modules>
   </component>
 </project>
