@@ -1,12 +1,13 @@
 #! /usr/bin/env python
 # coding=utf-8
-### Func. : Read Database of SURF_CLI_CHN_MUL_DAY_V3.0
-### Author: Liangjun Zhu
-### Date  : 2016-4-11
-### Email : zlj@lreis.ac.cn
-### Blog  : zhulj.net
+# Func. : Read Database of SURF_CLI_CHN_MUL_DAY_V3.0
+# Author: Liangjun Zhu
+# Date  : 2016-4-11
+# Email : zlj@lreis.ac.cn
+# Blog  : zhulj.net
 
-import os, sys, datetime, time
+import os
+import datetime
 import sqlite3
 
 
@@ -108,6 +109,7 @@ def saveToCSV(data, csvPath, flag = 'climData'):
         f.write(itemsStr)
     f.close()
 
+
 def isNum(value):
     try:
         x = int(value)
@@ -119,6 +121,8 @@ def isNum(value):
         return False
     else:
         return True
+
+
 def QueryDatabase(dbpath, savePath, stationIDs, startTime, endTime):
     '''
     Query and save data from Sqlite database
@@ -164,8 +168,9 @@ def QueryDatabase(dbpath, savePath, stationIDs, startTime, endTime):
 
 if __name__ == '__main__':
     ## Input parameters
-    SQLITE_DB_PATH = r'C:\z_data\common_GIS_Data\SURF_CLI_CHN_MUL_DAY_V3.0\SURF_CLI_CHN_MUL_DAY_V3.db'
-    QUERY_STATION_IDs = [58015,58102,58118,58122,58203,58215,58221,58225,58236,58311,58314,58319,58321,58326,58336,58338,58414,58419,58424,58429,58436,58437,58520,58531]
+    SQLITE_DB_PATH = r'C:\z_data\common_GIS_Data\SURF_CLI_CHN_MUL_DAY_V3.0\SURF_CLI_CHN_MUL_DAY_V3_201606.db'
+    QUERY_STATION_IDs = [58015, 58102, 58118, 58122, 58203, 58215, 58221, 58225, 58236, 58311, 58314, 58319, 58321,
+                         58326, 58336, 58338, 58414, 58419, 58424, 58429, 58436, 58437, 58520, 58531]
     QUERY_DATE_FROM = [2011, 1, 1]  ## format: Year, Month, Day
     QUERY_DATE_END = [2015, 12, 31]
     SAVE_PATH = r'D:\tmp\zhangliner'

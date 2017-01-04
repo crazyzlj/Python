@@ -1,31 +1,45 @@
-### Author: Liangjun Zhu
-### Date  : 2016-4-7
-### Email : zlj@lreis.ac.cn
-### Blog  : zhulj.net
+#! /usr/bin/env python
+# coding=utf-8
+# Author: Liangjun Zhu
+# Date  : 2016-4-7
+# Email : zlj@lreis.ac.cn
+# Blog  : zhulj.net
 
 import urllib2
-import os,sys,time
+import os
+import sys
+import time
+
+
 def currentPath():
     path = sys.path[0]
     if os.path.isdir(path):
         return path
     elif os.path.isfile(path):
         return os.path.dirname(path)
+
+
 def mkdir(dir):
     if not os.path.isdir(dir):
         os.mkdir(dir)
+
+
 def downloadByUrl(curUrl, filePath):
     f = urllib2.urlopen(curUrl)
     data = f.read()
     with open(filePath, "wb") as code:
         code.write(data)
+
+
 def findUrlTxts(path):
     tempFiles = os.listdir(path)
     urlTxts = []
     for s in tempFiles:
         if s.split(".")[-1] == 'txt':
-            urlTxts.append(path+ os.sep + s)
+            urlTxts.append(path + os.sep + s)
     return urlTxts
+
+
 def ReadUrls(files):
     urls = []
     for file in files:
@@ -34,6 +48,8 @@ def ReadUrls(files):
             urls.append(line)
         curF.close()
     return urls
+
+
 def findStations(urls):
     stations = []
     for curUrl in urls:
@@ -45,6 +61,7 @@ def findStations(urls):
                 stations.append(ss)
     return stations
 
+
 def isStationNeeded(name):
     temp = name.split('-')
     flag = False
@@ -53,6 +70,8 @@ def isStationNeeded(name):
             flag = True
             break
     return flag
+
+
 def climateDown(urls, savePath, eachNum = 200, timeout = 5):
     count = 1
     allcount = len(urls)
@@ -66,6 +85,8 @@ def climateDown(urls, savePath, eachNum = 200, timeout = 5):
             downloadByUrl(curUrl, curSavePath)
             print " %d / %d,  %s" % (count, allcount, saveName)
             count = count + 1
+
+
 if __name__ == '__main__':
     CUR_PATH = currentPath()
     CUR_PATH = r'C:\Users\ZhuLJ\Desktop\climate_data_download'
