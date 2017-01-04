@@ -1,13 +1,15 @@
 #! /usr/bin/env python
-#coding=utf-8
+# coding=utf-8
 ### Func. : Read Database of SURF_CLI_CHN_MUL_DAY_V3.0
 ### Author: Liangjun Zhu
 ### Date  : 2016-4-11
 ### Email : zlj@lreis.ac.cn
 ### Blog  : zhulj.net
 
-import os,sys,datetime,time
+import os, sys, datetime, time
 import sqlite3
+
+
 def get_conn(path):
     '''
     get connection of Sqlite
@@ -15,12 +17,14 @@ def get_conn(path):
     '''
     conn = sqlite3.connect(path)
     if os.path.exists(path) and os.path.isfile(path):
-        #print('database in hardware :[{}]'.format(path))
+        # print('database in hardware :[{}]'.format(path))
         return conn
     else:
         conn = None
-        #print('database in memory :[:memory:]')
+        # print('database in memory :[:memory:]')
         return sqlite3.connect(':memory:')
+
+
 def get_cursor(conn):
     '''
     get cursor of current connection
@@ -30,6 +34,8 @@ def get_cursor(conn):
         return conn.cursor()
     else:
         return get_conn('').cursor()
+
+
 def close_all(conn, cu):
     '''
     close connection and cursor of Sqlite
@@ -42,6 +48,8 @@ def close_all(conn, cu):
     finally:
         if cu is not None:
             cu.close()
+
+
 def getTablesList(dbpath):
     '''
     Get all tables' name in Sqlite database
@@ -57,6 +65,8 @@ def getTablesList(dbpath):
             tabList.append(tab[0])
     close_all(conn, cu)
     return tabList
+
+
 def fetchData(conn, sql):
     '''
     Query data by sql
@@ -71,12 +81,14 @@ def fetchData(conn, sql):
         r = cu.fetchall()
         if len(r) > 0:
             for e in range(len(r)):
-                #print r[e]
+                # print r[e]
                 data.append(r[e])
     else:
         print('the [{}] is empty or equal None!'.format(sql))
     return data
-def saveToCSV(data, csvPath, flag='climData'):
+
+
+def saveToCSV(data, csvPath, flag = 'climData'):
     f = open(csvPath, "w")
     title = ''
     if flag == 'climData':
@@ -95,6 +107,18 @@ def saveToCSV(data, csvPath, flag='climData'):
         itemsStr += '\n'
         f.write(itemsStr)
     f.close()
+
+def isNum(value):
+    try:
+        x = int(value)
+    except TypeError:
+        return False
+    except ValueError:
+        return False
+    except Exception:
+        return False
+    else:
+        return True
 def QueryDatabase(dbpath, savePath, stationIDs, startTime, endTime):
     '''
     Query and save data from Sqlite database
@@ -113,33 +137,37 @@ def QueryDatabase(dbpath, savePath, stationIDs, startTime, endTime):
         stationIDs = getTablesList(dbpath)
     else:
         for i in range(len(stationIDs)):
-            stationIDs[i] = 'S' + stationIDs[i]
+            if isNum(stationIDs[i]):
+                stationIDs[i] = 'S' + str(stationIDs[i])
+            else:
+                stationIDs[i] = 'S' + stationIDs[i]
     for tabName in stationIDs:
-        #tabName = 'S' + stationID
+        # tabName = 'S' + stationID
         stationID = tabName[1:]
         if tabName in tableList:
             csvPath = savePath + os.sep + tabName + '.csv'
             startT = datetime.datetime(startTime[0], startTime[1], startTime[2])
             endT = datetime.datetime(endTime[0], endTime[1], endTime[2])
-            endT += datetime.timedelta(days=1)
+            endT += datetime.timedelta(days = 1)
             startTStr = startT.strftime("%Y-%m-%d %H:%M:%S")[:10]
             endTStr = endT.strftime("%Y-%m-%d %H:%M:%S")[:10]
-            fetch_data_sql = '''SELECT * FROM %s WHERE date BETWEEN "%s" AND "%s" ORDER BY date''' % (tabName, startTStr, endTStr)
-            #print fetch_data_sql
-            data = fetchData(conn,fetch_data_sql)
+            fetch_data_sql = '''SELECT * FROM %s WHERE date BETWEEN "%s" AND "%s" ORDER BY date''' % (
+                tabName, startTStr, endTStr)
+            # print fetch_data_sql
+            data = fetchData(conn, fetch_data_sql)
             saveToCSV(data, csvPath)
             fetch_station_sql = '''SELECT * FROM stationInfo WHERE stID=%s ''' % (stationID)
-            stationInfoData.append(fetchData(conn,fetch_station_sql))
-    saveToCSV(stationInfoData, stationInfoCSVPath,'stationInfo')
+            stationInfoData.append(fetchData(conn, fetch_station_sql))
+    saveToCSV(stationInfoData, stationInfoCSVPath, 'stationInfo')
     conn.close()
 
 
 if __name__ == '__main__':
     ## Input parameters
-    SQLITE_DB_PATH = r'E:\data\common_GIS_Data\SURF_CLI_CHN_MUL_DAY_V3.0\SURF_CLI_CHN_MUL_DAY_V3.db'
-    QUERY_STATION_IDs = ['58321']       ## leave it blank to query all stations
-    QUERY_DATE_FROM = [2014,1,1] ## format: Year, Month, Day
-    QUERY_DATE_END  = [2014,12,31]
-    SAVE_PATH = r'E:\data\Dianbu\climate'
+    SQLITE_DB_PATH = r'C:\z_data\common_GIS_Data\SURF_CLI_CHN_MUL_DAY_V3.0\SURF_CLI_CHN_MUL_DAY_V3.db'
+    QUERY_STATION_IDs = [58015,58102,58118,58122,58203,58215,58221,58225,58236,58311,58314,58319,58321,58326,58336,58338,58414,58419,58424,58429,58436,58437,58520,58531]
+    QUERY_DATE_FROM = [2011, 1, 1]  ## format: Year, Month, Day
+    QUERY_DATE_END = [2015, 12, 31]
+    SAVE_PATH = r'D:\tmp\zhangliner'
 
     QueryDatabase(SQLITE_DB_PATH, SAVE_PATH, QUERY_STATION_IDs, QUERY_DATE_FROM, QUERY_DATE_END)

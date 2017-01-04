@@ -61,4 +61,5 @@ target/
 .ipynb_checkpoints
 
 #PyCharm Project files
-.idea
+.idea/
+.idea/*
