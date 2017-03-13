@@ -89,7 +89,7 @@ def fetchData(conn, sql):
     return data
 
 
-def saveToCSV(data, csvPath, flag = 'climData'):
+def saveToCSV(data, csvPath, flag='climData'):
     f = open(csvPath, "w")
     title = ''
     if flag == 'climData':
@@ -135,6 +135,8 @@ def QueryDatabase(dbpath, savePath, stationIDs, startTime, endTime):
     '''
     tableList = getTablesList(dbpath)
     conn = sqlite3.connect(dbpath)
+    if not os.path.isdir(savePath):
+        os.mkdir(savePath)
     stationInfoCSVPath = savePath + os.sep + 'stationInfo.csv'
     stationInfoData = []
     if stationIDs == []:
@@ -167,12 +169,11 @@ def QueryDatabase(dbpath, savePath, stationIDs, startTime, endTime):
 
 
 if __name__ == '__main__':
-    ## Input parameters
+    # Input parameters
     SQLITE_DB_PATH = r'C:\z_data\common_GIS_Data\SURF_CLI_CHN_MUL_DAY_V3.0\SURF_CLI_CHN_MUL_DAY_V3_201606.db'
-    QUERY_STATION_IDs = [58015, 58102, 58118, 58122, 58203, 58215, 58221, 58225, 58236, 58311, 58314, 58319, 58321,
-                         58326, 58336, 58338, 58414, 58419, 58424, 58429, 58436, 58437, 58520, 58531]
-    QUERY_DATE_FROM = [2011, 1, 1]  ## format: Year, Month, Day
+    QUERY_STATION_IDs = [53644]
+    QUERY_DATE_FROM = [1951, 1, 1]  # format: Year, Month, Day
     QUERY_DATE_END = [2015, 12, 31]
-    SAVE_PATH = r'D:\tmp\zhangliner'
+    SAVE_PATH = r'D:\tmp'
 
     QueryDatabase(SQLITE_DB_PATH, SAVE_PATH, QUERY_STATION_IDs, QUERY_DATE_FROM, QUERY_DATE_END)

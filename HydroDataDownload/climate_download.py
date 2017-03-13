@@ -84,7 +84,7 @@ def climateDown(urls, savePath, eachNum = 200, timeout = 5):
                 time.sleep(timeout)
             downloadByUrl(curUrl, curSavePath)
             print " %d / %d,  %s" % (count, allcount, saveName)
-            count = count + 1
+            count += 1
 
 
 if __name__ == '__main__':
