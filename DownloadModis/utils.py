@@ -133,6 +133,7 @@ def zipfiles(filenames, zip_file):
             commands.append(filename)
         runcommand(commands)
 
+
 def locateStringInList(str, strlist):
     found = False
     foundstr = []
@@ -141,4 +142,3 @@ def locateStringInList(str, strlist):
             found = True
             foundstr.append(tmpstr)
     return found, foundstr
-

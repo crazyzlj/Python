@@ -144,9 +144,9 @@ def read_url(url):
 if __name__ == '__main__':
     DOWN_PATH = r'D:\tmp'
     product = "MOD15A2H.006"
-    usrname = 'zlj@lreis.ac.cn'
-    pwd = 'Liangjun0130'
-    startdate = [2002, 2, 18]  # year, month, day, [mm, ss]
+    usrname = 'your_user_name'
+    pwd = 'your_password'
+    startdate = [2002, 2, 18]  # year, month, day
     enddate = [2002, 3, 5]
     deltaday = 8
     h = 1
