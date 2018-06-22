@@ -15,6 +15,7 @@ import time
 import os
 import sqlite3
 import datetime
+import shutil
 
 # ----------------------SQLite related functions  ----------------------------------------------#
 # ------------http://blog.csdn.net/cdnight/article/details/45332895-----------------------------#
@@ -535,7 +536,7 @@ def readClimateTxtData(txtPath):
     """
     read climate data from text file
     """
-    print('Read climate data...')
+    print('Read climate data in %s...' % txtPath)
     totNum = 0
     curNum = 1
     for root, dirs, files in os.walk(txtPath):
@@ -669,13 +670,46 @@ def readClimateStationTxt(txtpath):
     # print(station)
 
 
+def separate_into_folders(path):
+    """
+    Move files to folders named by year.
+    :param path:
+    :return:
+    """
+    sep_paths = list()
+    temp_names = os.listdir(path)
+    suffixs = ['txt', 'TXT']
+    for s in temp_names:
+        tmp_path = os.path.abspath(path + os.sep + s)
+        if os.path.isdir(tmp_path) and tmp_path not in sep_paths:
+            sep_paths.append(tmp_path)
+            continue
+        name_split = s.split(".")
+        if len(name_split) > 0 and s.split(".")[-1] not in suffixs:
+            continue
+        name_elems = name_split[0].split('-')
+        if not (len(name_elems) > 0 and len(name_elems[-1]) == 6):
+            continue
+        year_str = name_elems[-1][:4]
+        tmp_dir = os.path.abspath(path + os.sep + year_str)
+        if not os.path.isdir(tmp_dir):
+            os.mkdir(tmp_dir)
+        shutil.move(tmp_path, tmp_dir + os.sep + s)
+        if tmp_dir not in sep_paths:
+            sep_paths.append(tmp_dir)
+    # print(sep_paths)
+    return sep_paths
+
+
 if __name__ == '__main__':
     SRC_DATA_PATH = r'C:\z_data\common_GIS_Data\SURF_CLI_CHN_MUL_DAY_V3.0\download'
     SQLITE_DB_PATH = r'C:\z_data\common_GIS_Data\SURF_CLI_CHN_MUL_DAY_V3.0\test.db'
     startT = time.time()
-    ALL_STATION_INFO, ALL_STATION_DATA = readClimateTxtData(SRC_DATA_PATH)
-    writeClimateStationToDatabase(ALL_STATION_INFO, SQLITE_DB_PATH)
-    writeClimateDataToDatabase(ALL_STATION_DATA, SQLITE_DB_PATH)
+    paths = separate_into_folders(SRC_DATA_PATH)
+    for path in paths:
+        ALL_STATION_INFO, ALL_STATION_DATA = readClimateTxtData(path)
+        writeClimateStationToDatabase(ALL_STATION_INFO, SQLITE_DB_PATH)
+        writeClimateDataToDatabase(ALL_STATION_DATA, SQLITE_DB_PATH)
     endT = time.time()
     cost = endT - startT
     print('All mission done, time-consuming: ' + str(cost) + ' s\n')
