@@ -76,7 +76,7 @@ def fillUpstreamCells(flow_dir,stream,nodata,hillslp,value,row,col):
                 fillUpstreamCells(flow_dir,stream,nodata,hillslp,value,tempRow,tempCol)  
 
 def DelineateHillslopes(StreamFile,FlowDirFile,HillslpFile):
-    print "Delineating hillslopes by watershed..."
+    print "Delineating hillslopes (header, left, and right hillslope)..."
     StreamLinks = ReadRaster(StreamFile).data
     nodata = ReadRaster(StreamFile).noDataValue
     geotrans = ReadRaster(StreamFile).geotrans
@@ -162,3 +162,11 @@ def DelineateHillslopes(StreamFile,FlowDirFile,HillslpFile):
             previous = current
             current = downstream_index(FlowDir[CurRow][CurCol],CurRow,CurCol)
     WriteAscFile(HillslpFile, HillslopeMtx,ncols,nrows,geotrans,-9999)
+
+
+
+if __name__=='__main__':
+    streamf = r'C:\Users\ZhuLJ\Desktop\test\stream'
+    flowdirf = r'C:\Users\ZhuLJ\Desktop\test\grid_fdir_1'
+    hillslpf = r'C:\Users\ZhuLJ\Desktop\test\hillslope_test.asc'
+    DelineateHillslopes(streamf, flowdirf, hillslpf)

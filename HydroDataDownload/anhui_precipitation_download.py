@@ -113,26 +113,26 @@ if __name__ == '__main__':
     ##        f.write(line)
     ##    f.close()
 
-    # f=open(r"E:\data\Dianbu\observed\precipitation_download\Sites_P_IDs_dianbu.txt","r")
-    # ZhanHaos = []
-    # for eachSite in f:
-    #     ZhanHaos.append(eachSite.split('\n')[0])
-    # f.close()
-    # print len(ZhanHaos)
-    # print ZhanHaos
-    ZhanHaos = ['62903180', '62942837', '62902700']
+    f=open(r"C:\z_data\zhongTianShe\climate\pcp_download_ahyc\ZhanHao_zhongtianshe.txt","r")
+    ZhanHaos = []
+    for eachSite in f:
+        ZhanHaos.append(eachSite.split('\n')[0])
+    f.close()
+    print len(ZhanHaos)
+    print ZhanHaos
+    # ZhanHaos = ['62903180', '62942837', '62902700']
 
 
     def downData(start, end, ZhanHao, year):
-        xmlText = GetYcRainSum(start, end, ZhanHao, "60")
-        savePath = r'C:\z_data\Anhui\ahyc\%s-%s.txt' % (ZhanHao, str(year))
+        xmlText = GetYcRainSum(start, end, ZhanHao, "1440")
+        savePath = r'C:\z_data\zhongTianShe\climate\pcp_download_ahyc\daily\%s-%s.txt' % (ZhanHao, str(year))
         success = SaveXML2Csv(xmlText, ".//data", savePath, year)
         # print success
 
 
     # ZhanHaos = ['62903180','62942737','62942707','62915310','62933800','62942747','62922800','62942717','62942757']
     # years = ['2005','2006','2007','2008','2009','2010','2011','2012','2013','2014']
-    years = ['2015', '2016']
+    years = ['2011','2012', '2013']
     # months = ['01','02','03','04','05','06','07','08','09','10','11','12']
     # downData('2013-12-01 00:00','2013-12-31 00:00', '62903180')
 
