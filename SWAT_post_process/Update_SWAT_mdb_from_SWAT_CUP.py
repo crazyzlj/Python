@@ -11,7 +11,7 @@
     @version  : 1.0.1-beta
     @author   : Liangjun Zhu
     @Email    : zlj@lreis.ac.cn
-    @blog     : http://zhulj.net/swat/2016/03/27/update-swat-database-from-swatcup.html
+    @blog     : http://zhulj.net/post/2016-03-27-update-swat-database-from-swatcup/
 """
 
 import pyodbc
