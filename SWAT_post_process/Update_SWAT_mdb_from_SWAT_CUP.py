@@ -12,7 +12,7 @@
     @version  : 1.0.2-beta
     @author   : Liangjun Zhu
     @Email    : zlj@lreis.ac.cn
-    @blog     : http://zhulj.net/swat/2016/03/27/update-swat-database-from-swatcup.html
+    @blog     : http://zhulj.net/post/2016-03-27-update-swat-database-from-swatcup/
 """
 from __future__ import absolute_import, unicode_literals
 
