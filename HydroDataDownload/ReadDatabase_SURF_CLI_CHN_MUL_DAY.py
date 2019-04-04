@@ -173,10 +173,10 @@ def QueryDatabase(dbpath, savePath, stationIDs, startTime, endTime):
 
 if __name__ == '__main__':
     # Input parameters
-    SQLITE_DB_PATH = r'C:\z_data\common_GIS_Data\SURF_CLI_CHN_MUL_DAY_V3.0\test.db'
-    QUERY_STATION_IDs = [59981]
-    QUERY_DATE_FROM = [1960, 1, 1]  # format: Year, Month, Day
-    QUERY_DATE_END = [2017, 12, 31]
-    SAVE_PATH = r'D:\tmp\zhulj'
+    SQLITE_DB_PATH = r'C:\z_data\common_GIS_Data\SURF_CLI_CHN_MUL_DAY_V3.0\SURF_CLI_CHN_MUL_DAY_V3-201712.db'
+    QUERY_STATION_IDs = [53399]
+    QUERY_DATE_FROM = [2018, 1, 1]  # format: Year, Month, Day
+    QUERY_DATE_END = [2018, 12, 31]
+    SAVE_PATH = r'D:\tmp\xuhw'
 
     QueryDatabase(SQLITE_DB_PATH, SAVE_PATH, QUERY_STATION_IDs, QUERY_DATE_FROM, QUERY_DATE_END)
