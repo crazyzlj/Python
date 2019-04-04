@@ -4,19 +4,145 @@
     @reference: SWAT-CUP: SWAT Calibration and Uncertainty Programs - A User Manual. Eawag, 2015.
     @Usage: 1. Make sure you have python 2.x (x86) and pyodbc installed.
             2. Put this script in the same folder with model.in and {your swat project name}.mdb.
-            3. Just specify your swat project name to SWAT_PROJ_NAME.
-            4. Run it.
+            3. Run this script with the argument '-name', e.g.,
+               python Update_SWAT_mdb_from_SWAT_CUP.py -name <your_swat_project_name>
+
     @DONE     : 1. Update most parameters in Access database.
     @TODO     : Update parameters in the .dat files, e.g., plant.dat
-    @version  : 1.0.1-beta
+    @version  : 1.0.2-beta
     @author   : Liangjun Zhu
     @Email    : zlj@lreis.ac.cn
     @blog     : http://zhulj.net/swat/2016/03/27/update-swat-database-from-swatcup.html
 """
+from __future__ import absolute_import, unicode_literals
 
+import argparse
+from configparser import ConfigParser
+import os
+import sys
 import pyodbc
+from typing import AnyStr
+from io import open
 
-from SWAT_post_process.utils import *
+
+# Utility functions #
+
+
+def current_path(local_function):
+    """Get current path, refers to `how-do-i-get-the-path-of-the-current-executed-file-in-python`_
+
+    Examples:
+
+        .. code-block:: Python
+
+           from pygeoc.utils import UtilClass
+           curpath = UtilClass.current_path(lambda: 0)
+
+    .. _how-do-i-get-the-path-of-the-current-executed-file-in-python:
+        https://stackoverflow.com/questions/2632199/how-do-i-get-the-path-of-the-current-executed-file-in-python/18489147#18489147
+    """
+    from inspect import getsourcefile
+    fpath = getsourcefile(local_function)
+    if fpath is None:
+        return None
+    return os.path.dirname(os.path.abspath(fpath))
+
+
+def get_swat_project_name(desc='Specify SWAT project name to run this script.'):
+    # type: (AnyStr) -> (ConfigParser, AnyStr)
+    """Parse arguments.
+    Returns:
+        name: SWAT project name or raise exception.
+    """
+    # define input arguments
+    parser = argparse.ArgumentParser(description=desc)
+    parser.add_argument('-name', type=str, help='Name or full file path of SWAT project')
+    # parse arguments
+    args = parser.parse_args()
+    if args.name is None:
+        raise ValueError('You MUST specify the name of SWAT project!')
+    if os.path.isfile(args.name):
+        ws = os.path.dirname(args.name)
+        name = os.path.basename(args.name)
+    else:
+        ws = current_path(lambda: 0)
+        name = args.name
+    if '.mdb' not in name:
+        name = '%s.mdb' % name
+    return ws, name
+
+
+def is_string(in_str):
+    # type: (...) -> bool
+    """Test Unicode (text) string literal.
+
+    Examples:
+        >>> is_string('abc')
+        True
+        >>> is_string(u'abc')
+        True
+        >>> is_string(u'北京')
+        True
+        >>> is_string(123)
+        False
+        >>> is_string(None)
+        False
+        >>> is_string(['a', 'b'])
+        False
+
+        # Python 3
+        # >>> is_string(b'avoid considering byte-strings as strings.')
+        # False
+    """
+    return isinstance(in_str, (str, u''.__class__))
+
+
+def split_string(str_src, spliters=None, elim_empty=False):
+    # type: (AnyStr, Union[AnyStr, List[AnyStr], None], bool) -> List[AnyStr]
+    """Split string by split character space(' ') and indent('\t') as default
+
+    Examples:
+        >>> StringClass.split_string('exec -ini test.ini', ' ')
+        ['exec', '-ini', 'test.ini']
+
+    Args:
+        str_src: source string
+        spliters: e.g. [' ', '\t'], [], ' ', None
+        elim_empty: Eliminate empty (i.e., '') or not.
+
+    Returns:
+        split sub-strings as list
+    """
+    if is_string(spliters):
+        spliters = [spliters]
+    if spliters is None or not spliters:
+        spliters = [' ', '\t']
+    dest_strs = list()
+    src_strs = [str_src]
+    while True:
+        old_dest_strs = src_strs[:]
+        for s in spliters:
+            for src_s in src_strs:
+                temp_strs = src_s.split(s)
+                for temp_s in temp_strs:
+                    temp_s = temp_s.strip()
+                    if temp_s == '' and elim_empty:
+                        continue
+                    if is_string(temp_s):
+                        try:
+                            temp_s = str(temp_s)
+                        except:
+                            pass
+                    dest_strs.append(temp_s)
+            src_strs = dest_strs[:]
+            dest_strs = list()
+        if old_dest_strs == src_strs:
+            dest_strs = src_strs[:]
+            break
+    return dest_strs
+
+
+# End of Utility functions #
 
 ext2Table = {'mgt': 'mgt1'}
 
@@ -38,17 +164,18 @@ class paraIdentifier:
 
     def printStr(self):
         print(
-            "indentifer: %s, name: %s, table: %s, layers: %s, hydroGRP: %s, soil texture: %s, landuse: %s, subbasin: %s, slope: %s" % \
-            (self.indent, self.name, self.ext, self.lyr, self.hydrogrp, self.soltext, self.landuse,
-             self.subbsn, self.slope))
+                "indentifer: %s, name: %s, table: %s, layers: %s, hydroGRP: %s, soil texture: %s, landuse: %s, subbasin: %s, slope: %s" % \
+                (self.indent, self.name, self.ext, self.lyr, self.hydrogrp, self.soltext,
+                 self.landuse,
+                 self.subbsn, self.slope))
 
 
 def ExtractMultiNums(str):
     ### the foundamental format of str is 1,2,4-6.
-    orgNums = SplitStr(str, ',')
+    orgNums = split_string(str, ',')
     destNums = []
     if len(orgNums) == 1:
-        tempNumStrs = SplitStr(orgNums[0], '-')
+        tempNumStrs = split_string(orgNums[0], '-')
         if len(tempNumStrs) == 1:
             return [int(tempNumStrs[0])]
         elif len(tempNumStrs) == 2:
@@ -65,7 +192,7 @@ def ExtractMultiNums(str):
                 i = int(numStr)
                 destNums.append(i)
             except ValueError:
-                tempNumStrs = SplitStr(numStr, '-')
+                tempNumStrs = split_string(numStr, '-')
                 if len(tempNumStrs) == 2:
                     iStart = int(tempNumStrs[0])
                     iEnd = int(tempNumStrs[1])
@@ -81,9 +208,10 @@ def ReadModelIn(infile):
     f = open(infile)
     paraObjs = []
     for line in f:
-        line = StripStr(line.split('\n')[0])
+        line = line.split('\n')[0]
+        line.strip()
         if line != '' and line.find('//') < 0:
-            tempParaStrs = SplitStr(line)
+            tempParaStrs = split_string(line, elim_empty=True)
             # print tempParaStrs
             if len(tempParaStrs) != 2:
                 print("Please check the item %s in model.in!" % tempParaStrs)
@@ -113,15 +241,15 @@ def ReadModelIn(infile):
                             ### all layers, -1 is indicator in the following process
                             tempParaObj.lyr = [-1]
                     if len(tempPrefixs) > 2 and tempPrefixs[2] != '':
-                        tempParaObj.hydrogrp = SplitStr(tempPrefixs[2], ',')
+                        tempParaObj.hydrogrp = split_string(tempPrefixs[2], ',')
                     if len(tempPrefixs) > 3 and tempPrefixs[3] != '':
-                        tempParaObj.soltext = SplitStr(tempPrefixs[3], ',')
+                        tempParaObj.soltext = split_string(tempPrefixs[3], ',')
                     if len(tempPrefixs) > 4 and tempPrefixs[4] != '':
-                        tempParaObj.landuse = SplitStr(tempPrefixs[4], ',')
+                        tempParaObj.landuse = split_string(tempPrefixs[4], ',')
                     if len(tempPrefixs) > 5 and tempPrefixs[5] != '':
                         tempParaObj.subbsn = ExtractMultiNums(tempPrefixs[5])
                     if len(tempPrefixs) > 6 and tempPrefixs[6] != '':
-                        tempParaObj.slope = SplitStr(tempPrefixs[6], ',')
+                        tempParaObj.slope = split_string(tempPrefixs[6], ',')
                 else:
                     print("Please check the item %s in model.in!" % tempParaStrs[0])
                     sys.exit(1)
@@ -201,19 +329,19 @@ def ConstructSQLs(paraObjs, absValues, MDBPath):
                 baseSQLStr = "UPDATE %s SET %s = %f " % (para.ext, paraname, para.value)
             elif para.indent == 'a':
                 baseSQLStr = "UPDATE %s SET %s = %s + %f " % (
-                para.ext, paraname, paraname, para.value)
+                    para.ext, paraname, paraname, para.value)
             elif para.indent == 'r':
                 baseSQLStr = "UPDATE %s SET %s = %s * (1 + %f) " % (
-                para.ext, paraname, paraname, para.value)
+                    para.ext, paraname, paraname, para.value)
             else:
                 print("Error occurred in Constructing SQL, please check %s in model.in" % paraname)
                 sys.exit(1)
             if para.name in absValues:
                 MinMaxValues = absValues.get(para.name)
                 absValueSQLStrs.append("UPDATE %s SET %s = %f WHERE %s < %f;" % (
-                para.ext, paraname, MinMaxValues[0], paraname, MinMaxValues[0]))
+                    para.ext, paraname, MinMaxValues[0], paraname, MinMaxValues[0]))
                 absValueSQLStrs.append("UPDATE %s SET %s = %f WHERE %s > %f;" % (
-                para.ext, paraname, MinMaxValues[1], paraname, MinMaxValues[1]))
+                    para.ext, paraname, MinMaxValues[1], paraname, MinMaxValues[1]))
             curSQLStrs.append(baseSQLStr)
         # print(curSQLStrs)
         if filterStr != "WHERE ":
@@ -244,12 +372,13 @@ def UpdateSWATDatabase(SWAT_MDB, SQLs):
 
 def ReadAbsoluteVal(txt):
     absSWATVal = dict()
-    with open(txt, 'r') as f:  # Python3 with open(txt, 'r', encoding='UTF-8') as f
+    with open(txt, 'r', encoding='UTF-8') as f:
         for line in f:
-            line = StripStr(line.split('\n')[0])
+            line = line.split('\n')[0]
+            line.strip()
             if line != '' and line.find('//') < 0:
-                tempParaStrs = SplitStr(StripStr(line.split('\n')[0]))
-                # print(tempParaStrs[0:3])
+                tempParaStrs = split_string((line.split('\n')[0]).strip(), elim_empty=True)
+                print(tempParaStrs[0:3])
                 try:
                     minV = float(tempParaStrs[1])
                     maxV = float(tempParaStrs[2])
@@ -261,18 +390,17 @@ def ReadAbsoluteVal(txt):
     return absSWATVal
 
 
-if __name__ == '__main__':
-    PROJ_PATH = currentPath()
-    SWAT_PROJ_NAME = 'SOT'
-    SWAT_MDB = PROJ_PATH + os.sep + SWAT_PROJ_NAME + ".mdb"
-    MODEL_IN = PROJ_PATH + os.sep + "model.in"
-    ABS_SWAT_VAL_TXT = PROJ_PATH + os.sep + "Absolute_SWAT_Values.txt"
-
-    #SWAT_MDB = r'C:\Users\ZhuLJ\Desktop\swat_mdb\SOT.mdb'
-    #MODEL_IN = r'C:\Users\ZhuLJ\Desktop\swat_mdb\\model.in'
-    #ABS_SWAT_VAL_TXT = r'C:\Users\ZhuLJ\Desktop\swat_mdb\Absolute_SWAT_Values.txt'
+def main():
+    PROJ_PATH, SWAT_PROJ_NAME = get_swat_project_name()
+    SWAT_MDB = PROJ_PATH + os.sep + SWAT_PROJ_NAME
+    MODEL_IN = PROJ_PATH + os.sep + 'model.in'
+    ABS_SWAT_VAL_TXT = PROJ_PATH + os.sep + 'Absolute_SWAT_Values.txt'
 
     PARA_OBJs = ReadModelIn(MODEL_IN)
     ABS_SWAT_VAL = ReadAbsoluteVal(ABS_SWAT_VAL_TXT)
     SQLs = ConstructSQLs(PARA_OBJs, ABS_SWAT_VAL, SWAT_MDB)
     UpdateSWATDatabase(SWAT_MDB, SQLs)
+
+
+if __name__ == '__main__':
+    main()
