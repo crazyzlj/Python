@@ -1,4 +1,3 @@
-#! /usr/bin/env python
 # coding=utf-8
 from osgeo import gdal
 from osgeo import osr

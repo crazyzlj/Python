@@ -1,5 +1,4 @@
-#! /usr/bin/env python
-#coding=utf-8
+# coding=utf-8
 #import pylab
 import datetime,os,sys
 import matplotlib.pyplot as plt

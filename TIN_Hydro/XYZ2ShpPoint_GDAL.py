@@ -1,5 +1,4 @@
-#! /usr/bin/env python
-#coding=utf-8
+# coding=utf-8
 ## @Generate ESRI Shapefile from XYZ point text file.
 ## @author: Liang-Jun Zhu
 ## @Date: 2016-6-17

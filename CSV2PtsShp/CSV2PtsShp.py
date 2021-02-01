@@ -1,5 +1,4 @@
-#! /usr/bin/env python
-#coding=utf-8
+# coding=utf-8
 ## Author : Liangjun Zhu
 ## Email : crazyzlj@gmail.com
 ## Date : 2015-1-23

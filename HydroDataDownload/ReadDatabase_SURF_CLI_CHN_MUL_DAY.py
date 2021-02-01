@@ -1,4 +1,3 @@
-#! /usr/bin/env python
 # coding=utf-8
 # Func. : Read Database of SURF_CLI_CHN_MUL_DAY_V3.0
 # Author: Liangjun Zhu
@@ -90,13 +89,17 @@ def fetchData(conn, sql):
     return data
 
 
-def saveToCSV(data, csvPath, flag='climData'):
+def saveToCSV(data, csvPath, flag='climData', fields=None):
     f = open(csvPath, "w")
     title = ''
     if flag == 'climData':
-        title = 'stationID,datetimeBJ,avgPRS,maxPRS,minPRS,avgTEM,maxTEM,minTEM,' \
-                'avgRHU,minRHU,PRE208,PRE820,PRE,smEVP,lgEVP,avgWIN,maxWIN,maxWINASP,' \
-                'extWIN,extWINASP,SSD,avgGST,maxGST,minGST\n'
+        if fields is None:
+            title = 'stationID,datetimeBJ,avgPRS,maxPRS,minPRS,avgTEM,maxTEM,minTEM,' \
+                    'avgRHU,minRHU,PRE208,PRE820,PRE,smEVP,lgEVP,avgWIN,maxWIN,maxWINASP,' \
+                    'extWIN,extWINASP,SSD,avgGST,maxGST,minGST\n'
+        else:
+            title = ','.join(fields)
+            title += '\n'
     elif flag == 'stationInfo':
         title = 'stationID,lat,lon,alti\n'
     f.write(title)
@@ -126,7 +129,7 @@ def isNum(value):
         return True
 
 
-def QueryDatabase(dbpath, savePath, stationIDs, startTime, endTime):
+def QueryDatabase(dbpath, savePath, stationIDs, startTime, endTime, fields=None):
     """
     Query and save data from Sqlite database
     :param dbpath:
@@ -134,6 +137,7 @@ def QueryDatabase(dbpath, savePath, stationIDs, startTime, endTime):
     :param stationIDs:
     :param startTime:
     :param endTime:
+    :param newfields: List of selected fields, None means all fields.
     :return:
     """
     tableList = getTablesList(dbpath)
@@ -150,6 +154,14 @@ def QueryDatabase(dbpath, savePath, stationIDs, startTime, endTime):
                 stationIDs[i] = 'S' + str(stationIDs[i])
             else:
                 stationIDs[i] = 'S' + stationIDs[i]
+    if fields is None:
+        fields = ['stID', 'date', 'avgPRS', 'maxPRS', 'minPRS', 'avgTEM', 'maxTEM', 'minTEM',
+                  'avgRHU', 'minRHU', 'PRE208', 'PRE820', 'PRE', 'smEVP', 'lgEVP', 'avgWIN',
+                  'maxWIN', 'maxWINASP', 'extWIN', 'extWINASP', 'SSD', 'avgGST', 'maxGST', 'minGST']
+    else:
+        fields.insert(0, 'date')
+        fields.insert(0, 'stID')
+    selects = ','.join(fields)
     for tabName in stationIDs:
         # tabName = 'S' + stationID
         stationID = tabName[1:]
@@ -160,11 +172,11 @@ def QueryDatabase(dbpath, savePath, stationIDs, startTime, endTime):
             endT += datetime.timedelta(days=1)
             startTStr = startT.strftime("%Y-%m-%d %H:%M:%S")[:10]
             endTStr = endT.strftime("%Y-%m-%d %H:%M:%S")[:10]
-            fetch_data_sql = '''SELECT * FROM %s WHERE date BETWEEN "%s" AND
-                                "%s" ORDER BY date''' % (tabName, startTStr, endTStr)
+            fetch_data_sql = '''SELECT %s FROM %s WHERE date BETWEEN "%s" AND
+                                "%s" ORDER BY date''' % (selects, tabName, startTStr, endTStr)
             # print(fetch_data_sql)
             data = fetchData(conn, fetch_data_sql)
-            saveToCSV(data, csvPath)
+            saveToCSV(data, csvPath, fields=fields)
             fetch_station_sql = '''SELECT * FROM stationInfo WHERE stID=%s ''' % stationID
             stationInfoData.append(fetchData(conn, fetch_station_sql))
     saveToCSV(stationInfoData, stationInfoCSVPath, 'stationInfo')
@@ -173,10 +185,17 @@ def QueryDatabase(dbpath, savePath, stationIDs, startTime, endTime):
 
 if __name__ == '__main__':
     # Input parameters
-    SQLITE_DB_PATH = r'C:\z_data\common_GIS_Data\SURF_CLI_CHN_MUL_DAY_V3.0\SURF_CLI_CHN_MUL_DAY_V3-201712.db'
-    QUERY_STATION_IDs = [53399]
-    QUERY_DATE_FROM = [2018, 1, 1]  # format: Year, Month, Day
-    QUERY_DATE_END = [2018, 12, 31]
-    SAVE_PATH = r'D:\tmp\xuhw'
+    SQLITE_DB_PATH = r'D:\data\common_GIS_Data\SURF_CLI_CHN_MUL_DAY_V3.0\SURF_CLI_CHN_MUL_DAY_V3-201712.db'
+    QUERY_STATION_IDs = [58911]
+    QUERY_DATE_FROM = [1950, 1, 1]  # format: Year, Month, Day
+    QUERY_DATE_END = [2017, 12, 31]
+    # Available fields:
+    #   avgPRS,maxPRS,minPRS,avgTEM,maxTEM,minTEM, avgRHU,minRHU,
+    #   PRE208,PRE820,PRE,smEVP,lgEVP,avgWIN,maxWIN,maxWINASP,
+    #   extWIN,extWINASP,SSD,avgGST,maxGST,minGST
+    SELECTED_FIELDS = None
 
-    QueryDatabase(SQLITE_DB_PATH, SAVE_PATH, QUERY_STATION_IDs, QUERY_DATE_FROM, QUERY_DATE_END)
+    SAVE_PATH = r'D:\tmp'
+
+    QueryDatabase(SQLITE_DB_PATH, SAVE_PATH, QUERY_STATION_IDs, QUERY_DATE_FROM, QUERY_DATE_END,
+                  SELECTED_FIELDS)

@@ -1,5 +1,4 @@
-#! /usr/bin/env python
-#coding=utf-8
+# coding=utf-8
 # Package   :  Constructure TIN based on CGAL-python packages 
 # 
 # Created By:  Liangjun Zhu

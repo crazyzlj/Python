@@ -1,5 +1,4 @@
-#! /usr/bin/env python
-#coding=utf-8
+# coding=utf-8
 import os,numpy
 import arcpy
 from arcpy import env

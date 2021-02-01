@@ -1,4 +1,3 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 """This program helps you to create pond points for SWAT+ modeling.
 

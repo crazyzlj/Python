@@ -1,5 +1,4 @@
-#! /usr/bin/env python
-#coding=utf-8
+# coding=utf-8
 from CGAL.Triangulations_2 import *
 from CGAL.Triangulations_3 import *
 from CGAL.Kernel import Point_3

@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+
 # coding=utf-8
 # Func. : Create and Update Database of SURF_CLI_CHN_MUL_DAY_V3.0 from data.cma.cn
 # Author: Liangjun Zhu

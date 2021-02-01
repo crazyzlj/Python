@@ -1,5 +1,4 @@
-#! /usr/bin/env python
-#coding=utf-8
+# coding=utf-8
 # Package   :  TIN-based Hydrological Analysis
 # 
 # Created By:  Liangjun Zhu

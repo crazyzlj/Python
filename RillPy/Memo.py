@@ -1,5 +1,4 @@
-#! /usr/bin/env python
-#coding=utf-8
+# coding=utf-8
 ## Functional test!
 ##UpStreamShp = RillExtDir + os.sep + "UpStream.shp"
 ##arcpy.CreateFeatureclass_management(RillExtDir, "UpStream.shp", "POLYLINE", "", "DISABLED", "DISABLED", "")

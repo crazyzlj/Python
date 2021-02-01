@@ -1,5 +1,4 @@
-#! /usr/bin/env python
-#coding=gbk
+# coding=gbk
 # Package   :  Read and Write of ESRI Shapefile 
 # 
 # Created By:  Liangjun Zhu

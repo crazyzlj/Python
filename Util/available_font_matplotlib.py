@@ -1,4 +1,3 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 # https://www.zhihu.com/question/25404709
 from matplotlib.font_manager import FontManager

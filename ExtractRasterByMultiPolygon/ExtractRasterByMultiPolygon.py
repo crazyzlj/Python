@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+
 # coding=utf-8
 # Function  :  Extract Raster By Mask of MultPolygon Shapefile.
 # Created By:  Liangjun Zhu

@@ -1,5 +1,4 @@
-#! /usr/bin/env python
-#coding=utf-8
+# coding=utf-8
 
 ## Function List:
 ## 1. currentPath() return the path of your script

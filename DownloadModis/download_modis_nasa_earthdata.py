@@ -1,4 +1,3 @@
-#! /usr/bin/env python
 # coding=utf-8
 # Author: Liangjun Zhu
 # Date  : 2017-3-13

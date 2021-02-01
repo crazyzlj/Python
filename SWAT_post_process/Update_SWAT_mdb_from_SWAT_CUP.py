@@ -1,4 +1,3 @@
-#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 """This program helps you to update SWAT database (.mdb) from the calibrated parameters from SWAT-CUP.
     @reference: SWAT-CUP: SWAT Calibration and Uncertainty Programs - A User Manual. Eawag, 2015.

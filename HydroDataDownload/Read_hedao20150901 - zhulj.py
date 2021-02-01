@@ -1,5 +1,4 @@
-#! /usr/bin/env python
-#coding=utf-8
+# coding=utf-8
 #本程序从http://shangqing.wswj.net/TYFW/InfoQuery/ZhaBa.aspx下载安徽省闸坝水情信息
 # Created by Liangjun Zhu 201412
 # Modified by Tengfei Wei 20150413

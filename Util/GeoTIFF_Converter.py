@@ -1,5 +1,4 @@
-#! /usr/bin/env python
-#coding=utf-8
+# coding=utf-8
 
 ## GeoTIFF Converter
 ## Convert other grid format to GeoTIFF
