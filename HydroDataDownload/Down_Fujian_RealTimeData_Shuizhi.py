@@ -8,6 +8,7 @@
 #
 # Created by Liangjun Zhu (zlj@lreis.ac.cn)
 # Updated: 08/17/2020
+#          06/30/2021  Add verify=False to request.get() function
 from __future__ import unicode_literals
 
 import os
@@ -22,13 +23,15 @@ from pygeoc.utils import UtilClass
 
 REAL_URL = 'https://szfb.fjeec.cn:444/API/PublicService/ShuiZhiFaBu/GetRealData?AreaID=&RiverID='
 REQ_HEADERS = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
-                             '(KHTML, like Gecko) Chrome/84.0.4147.125 Safari/537.36',
+                             '(KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36',
+               'Accept': 'application/json,text/plain,*/*',
+               'Content-Type': 'application/json;charset=utf8',
                'Authorization': 'Public_Web=6A607FAB00686B7B363BD9A81B835649'}
 
 
 def get_realtime_data():
     try:
-        response = requests.get(REAL_URL, headers=REQ_HEADERS)
+        response = requests.get(REAL_URL, headers=REQ_HEADERS, verify=False)
         if response.status_code == 200:
             tmpstr = response.text
             tmpstr = tmpstr.replace('\r\n', '')
@@ -36,7 +39,8 @@ def get_realtime_data():
             tmpstr = tmpstr.replace('\r', '')
             return tmpstr
         return None
-    except RequestException:
+    except RequestException as excpt:
+        print(excpt)
         print('Get data failed from %s' % REAL_URL)
 
 
@@ -84,6 +88,8 @@ if __name__ == "__main__":
     wp = UtilClass.current_path(lambda: 0)
     # wp = 'D:\\tmp\\fujian_shuizhi_realtime'
     UtilClass.mkdir(wp)
+
+    # down_routinely(wp)
 
     sched = BlockingScheduler()
     sched.add_job(down_routinely, args=[wp], trigger='interval', seconds=10800)
